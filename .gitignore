@@ -1,0 +1,14 @@
+# macOS metadata
+.DS_Store
+
+# Local assistant/work logs
+.workbuddy/
+
+# Regenerated deployment package
+dist/
+
+# Internal handoff doc (not for public repo)
+HANDOFF.md
+
+# Internal working outputs
+outputs/

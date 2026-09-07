@@ -1,0 +1,1814 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Shike Zhang's AI product portfolio: product thinking, AI evaluation systems, shipped iOS products, and the decisions behind them.">
+  <title>Shike's AI Product Studio</title>
+  <style>
+    :root {
+      --paper: #ffffff;
+      --paper-2: #edf3f8;
+      --ink: #071e3d;
+      --muted: #536273;
+      --line: #c8d1da;
+      --accent: #1670b7;
+      --accent-2: #071e3d;
+      --white: #ffffff;
+      --success: #176b4d;
+      --warning: #8a5420;
+      --radius: 2px;
+      --shadow: none;
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, a { font: inherit; }
+    a { color: inherit; }
+    button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 3px; }
+    .skip-link {
+      position: absolute;
+      left: 12px;
+      top: -80px;
+      padding: 10px 14px;
+      background: var(--ink);
+      color: var(--white);
+      z-index: 100;
+    }
+    .skip-link:focus { top: 12px; }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 18px clamp(18px, 4vw, 64px);
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .96);
+      backdrop-filter: blur(18px);
+    }
+    .brand {
+      border: 0;
+      padding: 0;
+      background: none;
+      color: var(--ink);
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .nav-links { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+    .nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid transparent;
+      border-radius: 2px;
+      padding: 8px 12px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .nav-link:hover { color: var(--ink); border-color: var(--line); }
+    .nav-link[aria-current="page"] { background: var(--ink); color: var(--white); border-color: var(--ink); }
+    .nav-type {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper-2);
+      color: var(--muted);
+      font-size: .68rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+      line-height: 1;
+    }
+    .nav-link:hover .nav-type { color: var(--ink); border-color: var(--line); }
+    .nav-link[aria-current="page"] .nav-type { color: rgba(255, 255, 255, .82); background: rgba(255, 255, 255, .14); border-color: transparent; }
+    .menu-toggle { display: none; }
+    .lang-switch { display: inline-flex; align-items: center; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 2px; }
+    .lang-switch button { border: 0; background: none; padding: 4px 10px; font-size: .82rem; font-weight: 700; color: var(--muted); cursor: pointer; border-radius: 2px; white-space: nowrap; }
+    .lang-switch button[aria-pressed="true"] { background: var(--ink); color: var(--white); }
+    .nav-lang { display: none; }
+    html[lang="zh-CN"] h1, html[lang="zh-CN"] h2, html[lang="zh-CN"] h3, html[lang="zh-CN"] .card-title { letter-spacing: 0; }
+    @media (max-width: 400px) { .brand { font-size: .95rem; } }
+
+    /* Navbar collapses into the hamburger menu on narrower desktop widths
+       so the longer "label + [Web]/[iOS]" items never overflow. */
+    @media (max-width: 1060px) {
+      .nav-links { display: none; position: absolute; left: 18px; right: 18px; top: calc(100% + 8px); flex-direction: column; align-items: stretch; padding: 12px; border: 1px solid var(--line); border-radius: 2px; background: var(--white); box-shadow: 0 12px 30px rgba(7,30,61,.12); }
+      .nav-links.is-open { display: flex; }
+      .nav-link { text-align: left; }
+      .menu-toggle { display: inline-flex; border: 1px solid var(--ink); border-radius: 2px; padding: 8px 12px; background: transparent; cursor: pointer; }
+      .header-lang { display: none; }
+      .nav-lang { display: inline-flex; align-self: flex-start; margin: 4px 6px 12px; }
+    }
+
+    .page { display: none; }
+    .page.is-active { display: block; animation: reveal .28s ease both; }
+    @keyframes reveal { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .container { width: min(1160px, calc(100% - 36px)); margin: 0 auto; }
+    .section { padding: clamp(42px, 6vw, 80px) 0; border-bottom: 1px solid var(--line); }
+    .section:last-child { border-bottom: 0; }
+    .hero { padding-top: clamp(50px, 7.5vw, 96px); }
+    #featured { scroll-margin-top: 26px; }
+    .eyebrow {
+      margin: 0 0 13px;
+      color: var(--muted);
+      font-size: .8rem;
+      font-weight: 800;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      max-width: 1020px;
+      margin-bottom: 18px;
+      font-size: clamp(1.7rem, 3.6vw, 3.2rem);
+      line-height: 1.02;
+      letter-spacing: -.04em;
+      font-weight: 720;
+    }
+    .case-hero h1 { font-size: clamp(2rem, 4.1vw, 3.9rem); }
+    h2 {
+      max-width: 850px;
+      margin-bottom: 14px;
+      font-size: clamp(1.4rem, 2.6vw, 2.5rem);
+      line-height: 1.08;
+      letter-spacing: -.03em;
+    }
+    .title-single-line { white-space: nowrap; }
+    @media (max-width: 760px) {
+      .title-single-line { white-space: normal; font-size: clamp(1.3rem, 5.4vw, 1.8rem); }
+    }
+    h3 { margin-bottom: 8px; font-size: 1.02rem; line-height: 1.25; }
+    .lead {
+      max-width: 770px;
+      color: var(--muted);
+      font-size: clamp(1.1rem, 2vw, 1.36rem);
+    }
+    /* ---- Home hero: outcome-driven, two-column (left copy / right preview) ---- */
+    .home-hero { padding-bottom: clamp(64px, 9vw, 108px); }
+    .hero-split {
+      display: grid;
+      grid-template-columns: minmax(0, 1.06fr) minmax(300px, .94fr);
+      gap: clamp(32px, 5.5vw, 76px);
+      align-items: center;
+    }
+    .hero-copy { min-width: 0; }
+    .hero-kicker {
+      display: inline-flex;
+      align-items: center;
+      margin: 0 0 20px;
+      padding: 7px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper-2);
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .home-hero h1 {
+      max-width: 15ch;
+      margin-bottom: 16px;
+      font-weight: 800;
+      line-height: 1.04;
+    }
+    .home-hero .lead { max-width: 46ch; color: var(--muted); }
+    .hero-split .actions { margin-top: 24px; }
+    .btn-arrow { display: inline-block; margin-left: 8px; transform: translateY(1px); font-weight: 800; }
+    .button.primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      border: 1px solid var(--ink);
+      border-radius: 2px;
+      padding: 10px 17px;
+      background: transparent;
+      color: var(--ink);
+      font-weight: 750;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .button:hover { background: var(--paper-2); }
+    .button.primary { background: var(--ink); color: var(--white); }
+    .button.small { min-height: 38px; padding: 7px 13px; font-size: .88rem; }
+    /* Legacy proof strip (still used on case-page heroes, e.g. DanceLog) */
+    .proof-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 22px;
+      margin-top: 36px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+    }
+    .proof-strip strong { color: var(--ink); }
+
+    .tech-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+    .tech-tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 4px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--paper-2);
+      color: var(--ink);
+      font-size: .82rem;
+      font-weight: 650;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .proof-bar {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 30px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+    }
+    .proof-item { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding-right: 18px; }
+    .proof-item + .proof-item { border-left: 1px solid var(--line); padding-left: 22px; padding-right: 0; }
+    .proof-num {
+      font-size: clamp(1.9rem, 3vw, 2.5rem);
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: -.03em;
+      color: var(--ink);
+    }
+    .proof-num-wide { font-size: clamp(1.05rem, 1.55vw, 1.45rem); letter-spacing: -.01em; padding-top: 4px; }
+    .proof-label { color: var(--muted); font-size: .8rem; line-height: 1.4; }
+
+    /* ---- Hero visual preview (layered product mockups) ---- */
+    .hero-visual { position: relative; margin: 0; padding: 6px 0 30px; }
+    .visual-swatch {
+      position: absolute;
+      right: -20px;
+      top: 18px;
+      width: 140px;
+      height: 140px;
+      border: 1px solid var(--line);
+      background: var(--paper-2);
+      transform: rotate(8deg);
+      z-index: 0;
+    }
+    .win {
+      position: relative;
+      z-index: 1;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--white);
+      box-shadow: 0 20px 44px -20px rgba(7, 30, 61, .28);
+      overflow: hidden;
+    }
+    .win-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 13px;
+      border-bottom: 1px solid var(--line);
+      background: var(--paper-2);
+    }
+    .win-dots { display: inline-flex; gap: 5px; flex: 0 0 auto; }
+    .win-dots i { width: 9px; height: 9px; border-radius: 50%; display: block; }
+    .win-dots i:nth-child(1) { background: #ff5f57; }
+    .win-dots i:nth-child(2) { background: #febc2e; }
+    .win-dots i:nth-child(3) { background: #28c840; }
+    .win-url, .win-app {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+    .win-shot img { display: block; width: 100%; height: auto; }
+    .win-phone {
+      position: absolute;
+      z-index: 2;
+      width: 47%;
+      left: -34px;
+      bottom: 0;
+      border-radius: 14px;
+      box-shadow: 0 18px 38px -16px rgba(7, 30, 61, .34);
+      transform: rotate(-3.5deg);
+    }
+    .win-phone img { display: block; width: 100%; height: auto; }
+    .float-chip {
+      position: absolute;
+      z-index: 3;
+      top: 0;
+      right: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--white);
+      box-shadow: 0 10px 26px -12px rgba(7, 30, 61, .3);
+      color: var(--ink);
+      font-size: .78rem;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+    .chip-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: chipPulse 2.2s ease-in-out infinite; }
+    @keyframes chipPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(23, 107, 77, .35); }
+      50% { box-shadow: 0 0 0 6px rgba(23, 107, 77, 0); }
+    }
+    html[lang="zh-CN"] .proof-num, html[lang="zh-CN"] .proof-num-wide { letter-spacing: 0; }
+
+    .grid-2, .grid-3, .grid-4 { display: grid; gap: 18px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .card {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: clamp(22px, 3.2vw, 38px);
+      background: var(--white);
+      box-shadow: var(--shadow);
+    }
+    .card p, .card li { color: var(--muted); }
+    .card p:last-child { margin-bottom: 0; }
+    .card ul { margin: 12px 0 0; padding-left: 20px; }
+    .card li + li { margin-top: 6px; }
+    .featured-card { padding: clamp(24px, 4vw, 46px); border: 1px solid var(--line); border-top: 5px solid var(--accent); }
+    .card-title { max-width: 720px; margin-bottom: 12px; font-size: clamp(1.4rem, 2.8vw, 2.8rem); line-height: 1.05; letter-spacing: -.04em; }
+    .card-copy { max-width: 700px; font-size: 1.06rem; }
+    .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 22px; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 29px;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      padding: 4px 9px;
+      background: var(--paper-2);
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 750;
+      text-decoration: none;
+    }
+    .tag.strong { border-color: var(--ink); color: var(--ink); }
+    .tag.external::after { content: " ↗"; }
+    .case-card { min-height: 360px; display: flex; flex-direction: column; justify-content: space-between; border-top: 5px solid var(--accent); }
+    .case-card .number { color: var(--accent); font-size: 1.6rem; line-height: 1; font-weight: 750; }
+
+    .flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 34px; margin-top: 24px; }
+    .flow.step-4 { grid-template-columns: repeat(4, 1fr); }
+    .flow.step-5 { grid-template-columns: repeat(5, 1fr); gap: 22px; }
+    .flow-node {
+      position: relative;
+      min-height: 150px;
+      border-top: 3px solid var(--accent);
+      padding-top: 16px;
+    }
+    .flow-node:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -25px;
+      top: 12px;
+      color: var(--accent);
+      font-size: 1.3rem;
+      font-weight: 900;
+    }
+    .flow-node span { display: block; margin-bottom: 10px; color: var(--accent); font-weight: 850; }
+    .flow-node p { margin: 0; color: var(--muted); }
+    .callout {
+      margin-top: 20px;
+      border-left: 5px solid var(--accent);
+      padding: 18px 22px;
+      background: var(--paper-2);
+      color: var(--muted);
+    }
+    .callout strong { color: var(--ink); }
+
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      margin-top: 32px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .fact { padding: 20px 20px 20px 0; }
+    .fact + .fact { border-left: 1px solid var(--line); padding-left: 20px; }
+    .fact-label { display: block; margin-bottom: 7px; color: var(--muted); font-size: .75rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .fact-value { font-weight: 800; }
+
+    .comparison { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    .comparison th, .comparison td { padding: 16px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+    .comparison th { color: var(--muted); font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; }
+    .comparison td { background: rgba(237, 243, 248, .42); }
+    .decision { color: var(--success); font-weight: 850; }
+    .evidence-band {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 18px;
+      margin-top: 20px;
+    }
+    .evidence-screen {
+      min-height: 310px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 28px;
+      background:
+        linear-gradient(rgba(7,30,61,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(7,30,61,.03) 1px, transparent 1px),
+        var(--white);
+      background-size: 24px 24px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .evidence-screen strong { display: block; margin-bottom: 8px; color: var(--ink); font-size: 1.2rem; }
+    .evidence-list { display: grid; gap: 12px; }
+    .evidence-item { border: 1px solid var(--line); border-radius: 2px; padding: 16px; background: var(--white); }
+    .evidence-item strong { display: block; margin-bottom: 5px; }
+    .evidence-item span { color: var(--muted); }
+    .metric-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+    .metric { min-width: 160px; flex: 1; border-top: 3px solid var(--accent); padding: 14px 0; }
+    .metric strong { display: block; font-size: 2rem; letter-spacing: -.04em; }
+    .metric span { color: var(--muted); }
+    .process-list { counter-reset: process; display: grid; gap: 0; margin-top: 24px; }
+    .process-item {
+      counter-increment: process;
+      display: grid;
+      grid-template-columns: 70px minmax(0, 1fr);
+      gap: 18px;
+      padding: 16px 0;
+      border-top: 1px solid var(--line);
+    }
+    .process-item::before { content: "0" counter(process); color: var(--accent); font-weight: 900; }
+    .process-item strong { display: block; margin-bottom: 6px; font-size: 1.08rem; }
+    .process-item p { margin: 0; color: var(--muted); }
+
+    .media-wide {
+      display: block;
+      width: 100%;
+      height: auto;
+      margin-top: 20px;
+      border: 1px solid var(--line);
+      background: var(--paper-2);
+    }
+    .case-thumb {
+      width: calc(100% + clamp(44px, 6.4vw, 76px));
+      max-height: 310px;
+      margin: calc(-1 * clamp(22px, 3.2vw, 38px)) calc(-1 * clamp(22px, 3.2vw, 38px)) 28px;
+      object-fit: cover;
+      object-position: top;
+      border-bottom: 1px solid var(--line);
+    }
+    .image-gallery {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 20px;
+    }
+    .image-gallery figure { margin: 0; min-width: 0; }
+    .image-gallery img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--line);
+      background: var(--paper-2);
+    }
+    .image-gallery figcaption,
+    .evidence-figure figcaption {
+      padding-top: 10px;
+      color: var(--muted);
+      font-size: .86rem;
+    }
+    .image-gallery.screens img { aspect-ratio: 16 / 10; object-fit: cover; object-position: top; }
+    .image-gallery.phones { align-items: start; }
+    .image-gallery.phones figure { max-width: 360px; justify-self: center; }
+    .image-gallery.phones img { aspect-ratio: 1284 / 2778; object-fit: cover; object-position: top; }
+    .image-gallery.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .evidence-figure { margin: 22px 0 0; }
+    .evidence-figure img { display: block; width: 100%; height: auto; border: 1px solid var(--line); }
+
+    /* ---- Product thinking & lessons (Content Safety Sandbox case) ---- */
+    .mono, .module-tag, .release-count {
+      font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    }
+    .eyebrow.mono { letter-spacing: .08em; }
+    .module-tag {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 44px 0 18px;
+      font-size: .92rem;
+      font-weight: 800;
+    }
+    .module-tag .no { color: var(--accent); }
+    .module-tag::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
+    .module-tag:first-of-type { margin-top: 30px; }
+    .paradigm-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      margin-bottom: 14px;
+      border: 1px solid var(--line);
+      background: var(--paper-2);
+      color: var(--ink);
+    }
+    .paradigm-icon svg { width: 19px; height: 19px; }
+    .card.favored { border-top: 3px solid var(--accent); }
+    .chain { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+    .chain .chip {
+      padding: 5px 11px;
+      border: 1px solid var(--line);
+      background: var(--paper-2);
+      font-size: .8rem;
+      font-weight: 700;
+    }
+    .chain .arrow { color: var(--accent); font-weight: 900; }
+    .paradigm-note { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--line); }
+    .paradigm-note .note-label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: .7rem;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .paradigm-note p { margin: 0; }
+    .card.favored .paradigm-note .note-label { color: var(--accent); }
+    .lesson-quote {
+      margin: 0;
+      padding: clamp(24px, 3.6vw, 42px);
+      background: var(--ink);
+      color: var(--white);
+    }
+    .lesson-quote .quote-mark { display: block; margin-bottom: 12px; color: rgba(255, 255, 255, .38); font-size: 2.8rem; line-height: .5; font-weight: 900; }
+    .lesson-quote p {
+      margin: 0 0 14px;
+      max-width: 62ch;
+      font-size: clamp(1.1rem, 1.9vw, 1.42rem);
+      line-height: 1.42;
+      font-weight: 650;
+      letter-spacing: -.01em;
+    }
+    .lesson-quote .quote-src { display: block; color: rgba(255, 255, 255, .64); font-size: .76rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .insight-cards { margin-top: 18px; }
+    .release-track { margin-top: 20px; border: 1px solid var(--line); }
+    .release-row { display: grid; grid-template-columns: minmax(170px, 230px) minmax(0, 1fr); gap: 20px; padding: 20px 22px; }
+    .release-row.genai { background: var(--paper-2); border-top: 1px dashed var(--line); }
+    .release-label strong { display: block; }
+    .release-label .count {
+      display: inline-flex;
+      margin-top: 8px;
+      padding: 3px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--white);
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+    }
+    .release-row.genai .count { background: var(--accent); border-color: var(--accent); color: var(--white); }
+    .release-pills { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 8px; }
+    .release-pills .chip {
+      padding: 5px 12px;
+      border: 1px solid var(--ink);
+      border-radius: 999px;
+      background: var(--white);
+      font-size: .82rem;
+      font-weight: 700;
+    }
+    .release-note { margin: 0; padding: 13px 22px; border-top: 1px solid var(--line); color: var(--muted); font-size: .86rem; }
+    .takeaway-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 20px; }
+    .takeaway { padding: clamp(20px, 2.6vw, 30px); border: 1px solid var(--line); }
+    .takeaway .take-label {
+      display: block;
+      margin-bottom: 9px;
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .takeaway p { margin: 0; font-size: 1.04rem; font-weight: 650; line-height: 1.45; }
+    .takeaway.dark { background: var(--ink); border-color: var(--ink); color: var(--white); }
+    .takeaway.dark .take-label { color: rgba(255, 255, 255, .62); }
+    .discussion-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      margin-top: 44px;
+      padding: clamp(22px, 3.2vw, 36px);
+      border: 1px solid var(--line);
+      background: var(--paper-2);
+    }
+    .discussion-icon {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 46px;
+      height: 46px;
+      border: 1px solid var(--line);
+      background: var(--white);
+      color: var(--ink);
+    }
+    .discussion-icon svg { width: 21px; height: 21px; }
+    .discussion-card h3 { margin-bottom: 6px; }
+    .discussion-card p { max-width: 62ch; margin: 0 0 16px; color: var(--muted); }
+
+    .case-navigation { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 24px; }
+    .site-footer { padding: 36px max(18px, calc((100% - 1160px)/2)); border-top: 1px solid var(--line); color: var(--muted); }
+    .footer-row { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; position: absolute; left: 18px; right: 18px; top: calc(100% + 8px); flex-direction: column; align-items: stretch; padding: 12px; border: 1px solid var(--line); border-radius: 2px; background: var(--white); box-shadow: 0 12px 30px rgba(7,30,61,.12); }
+      .nav-links.is-open { display: flex; }
+      .nav-link { text-align: left; }
+      .menu-toggle { display: inline-flex; border: 1px solid var(--ink); border-radius: 2px; padding: 8px 12px; background: transparent; cursor: pointer; }
+      .header-lang { display: none; }
+      .nav-lang { display: inline-flex; align-self: flex-start; margin: 4px 6px 12px; }
+      .evidence-band, .hero-split { grid-template-columns: 1fr; }
+      .hero-split { gap: 36px; }
+      .hero-visual { margin-top: 6px; }
+      .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .flow.step-5 { grid-template-columns: repeat(3, 1fr); }
+      .flow.step-5 .flow-node:nth-child(3)::after { display: none; }
+    }
+    @media (max-width: 700px) {
+      .site-header { padding: 14px 18px; }
+      .brand { font-size: 1.1rem; }
+      .container { width: min(100% - 28px, 1160px); }
+      .section { padding: 38px 0; }
+      h1 { font-size: clamp(1.55rem, 8.4vw, 2.8rem); }
+      .case-hero h1 { font-size: clamp(2rem, 9.8vw, 3.5rem); }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .flow, .flow.step-4, .flow.step-5 { grid-template-columns: 1fr; gap: 18px; }
+      .flow-node { min-height: 0; padding-bottom: 12px; }
+      .flow-node:not(:last-child)::after { content: "↓"; right: 8px; top: auto; bottom: -18px; }
+      .flow.step-5 .flow-node:nth-child(3)::after { display: block; }
+      .facts { grid-template-columns: 1fr 1fr; }
+      .fact:nth-child(3) { border-left: 0; border-top: 1px solid var(--line); }
+      .fact:nth-child(4) { border-top: 1px solid var(--line); }
+      .comparison { display: block; overflow-x: auto; }
+      .image-gallery { gap: 12px; }
+      .module-tag { margin: 34px 0 14px; }
+      .release-row { grid-template-columns: 1fr; gap: 12px; }
+      .takeaway-grid { grid-template-columns: 1fr; }
+      .discussion-card { flex-direction: column; }
+      .home-hero { padding-bottom: clamp(52px, 15vw, 78px); }
+      .hero-kicker { letter-spacing: .1em; white-space: normal; font-size: .65rem; padding: 6px 11px; }
+      .hero-visual { padding: 0 0 22px; }
+      .win-phone { width: 42%; left: -8px; bottom: -2px; }
+      .visual-swatch { display: none; }
+      .float-chip { top: -2px; right: 0; }
+      .proof-item { padding-right: 12px; }
+      .proof-item + .proof-item { padding-left: 16px; }
+    }
+    @media (max-width: 430px) {
+      .facts { grid-template-columns: 1fr; }
+      .fact + .fact, .fact:nth-child(3), .fact:nth-child(4) { border-left: 0; border-top: 1px solid var(--line); padding-left: 0; }
+      .actions .button { width: 100%; }
+      .image-gallery { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 10px; }
+      .image-gallery figure { flex: 0 0 82%; max-width: none; scroll-snap-align: start; }
+      .tech-tags { gap: 7px; }
+      .win-phone { width: 40%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .page.is-active { animation: none; }
+      .button:hover { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-header">
+    <button class="brand" type="button" data-go="home" aria-label="Go to home">Shike's AI Product Studio</button>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-navigation">Menu</button>
+    <nav class="nav-links" id="main-navigation" aria-label="Primary navigation">
+      <div class="lang-switch nav-lang" role="group" aria-label="Language / 语言">
+        <button type="button" data-lang-btn="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang-btn="zh" aria-pressed="false">中文</button>
+      </div>
+      <button class="nav-link" type="button" data-go="home" aria-current="page">Home</button>
+      <button class="nav-link" type="button" data-go="sandbox"><span class="nav-name">Safety Sandbox</span> <span class="nav-type">[Web]</span></button>
+      <button class="nav-link" type="button" data-go="freestyle"><span class="nav-name">Freestyle</span> <span class="nav-type">[iOS]</span></button>
+      <button class="nav-link" type="button" data-go="dancelog"><span class="nav-name">DanceLog</span> <span class="nav-type">[iOS]</span></button>
+    </nav>
+    <div class="lang-switch header-lang" role="group" aria-label="Language / 语言">
+      <button type="button" data-lang-btn="en" aria-pressed="true">EN</button>
+      <button type="button" data-lang-btn="zh" aria-pressed="false">中文</button>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <article class="page is-active" data-page="home">
+      <div class="container">
+        <section class="section hero home-hero">
+          <div class="hero-split">
+            <div class="hero-copy">
+              <p class="hero-kicker">AI Product Manager · Independent Builder</p>
+              <h1>I design, build, and ship full-stack AI tools &amp; mobile apps.</h1>
+              <p class="lead">A hands-on portfolio showcasing end-to-end execution: from GenAI evaluation sandboxes to live iOS applications with real users.</p>
+              <div class="tech-tags" role="list" aria-label="Capability tags">
+                <span class="tech-tag" role="listitem">GenAI Safety</span>
+                <span class="tech-tag" role="listitem">LLM Evaluation</span>
+                <span class="tech-tag" role="listitem">SwiftUI</span>
+                <span class="tech-tag" role="listitem">Local RAG</span>
+              </div>
+              <div class="actions">
+                <a class="button primary" href="#featured" data-scroll-to="featured"><span>Explore Featured Project</span><span class="btn-arrow" aria-hidden="true">↓</span></a>
+                <a class="button" href="https://www.linkedin.com/in/shikezhang/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
+              </div>
+              <div class="proof-bar">
+                <div class="proof-item"><strong class="proof-num">1</strong><span class="proof-label">AI Risk &amp; Eval Sandbox</span></div>
+                <div class="proof-item"><strong class="proof-num">2</strong><span class="proof-label">Live iOS Apps Shipped</span></div>
+                <div class="proof-item"><strong class="proof-num proof-num-wide">End-to-End</strong><span class="proof-label">Design, Code &amp; Deploy</span></div>
+              </div>
+            </div>
+            <div class="hero-visual">
+              <div class="visual-swatch" aria-hidden="true"></div>
+              <div class="win win-main">
+                <div class="win-bar"><span class="win-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="win-url">safetysandbox.coze.site</span></div>
+                <div class="win-shot"><img src="assets/sandbox-flow-1.png" alt="Content Safety Sandbox Flow 1 interface showing completed parse, risk scan, classification, and output nodes" loading="eager"></div>
+              </div>
+              <div class="win win-phone">
+                <div class="win-bar"><span class="win-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="win-app">Freestyle Challenge</span></div>
+                <img src="assets/freestyle-home-card.png" alt="Freestyle Dance Challenge App Store visual showing challenge cards and app screens" loading="lazy">
+              </div>
+              <div class="float-chip"><i class="chip-dot" aria-hidden="true"></i><span>Live prototype</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="featured">
+          <p class="eyebrow">Featured case · AI evaluation system</p>
+          <div class="card featured-card">
+            <div class="tags"><span class="tag strong">Prototype</span><span class="tag">Synthetic cases</span><span class="tag">AI evaluation</span><span class="tag">Guardrails</span></div>
+            <h2 class="card-title">Content Safety Sandbox</h2>
+            <p class="card-copy">A three-layer approach to exploring model safety: screen risky inputs, test guardrails under adversarial pressure, and evaluate the final output with an explicit rubric.</p>
+            <div class="flow">
+              <div class="flow-node"><span>Flow 1</span><h3>Input screening</h3><p>Can a rule or classifier identify a malicious prompt?</p></div>
+              <div class="flow-node"><span>Flow 2</span><h3>Red-blue testing</h3><p>Can a guardrail hold up against disguised or multi-step attacks?</p></div>
+              <div class="flow-node"><span>Flow 3</span><h3>Output evaluation</h3><p>How should a judge assess the safety and usefulness of the answer?</p></div>
+            </div>
+            <div class="callout"><strong>Evidence boundary:</strong> this case includes a Coze prototype, designed test suites, and screenshots of individual run states. It is not presented as a production financial-risk system.</div>
+            <img class="media-wide" src="assets/sandbox-flow-2.png" alt="Content Safety Sandbox Flow 2 interface showing red attack, blue shield, verdict, and report nodes" loading="lazy">
+            <div class="actions"><button class="button primary" type="button" data-go="sandbox">Explore the case</button><a class="button" href="https://safetysandbox.coze.site" target="_blank" rel="noopener noreferrer">Try Now ↗</a></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Shipped products</p>
+          <h2 class="title-single-line">Two products, two different kinds of product work.</h2>
+          <div class="grid-2">
+            <div class="card case-card">
+              <div>
+                <img class="case-thumb" src="assets/freestyle-home-card.png" alt="Freestyle Dance Challenge App Store visual showing challenge cards and app screens" loading="lazy">
+                <div class="number">02</div>
+                <div class="tags"><span class="tag strong">Shipped</span><span class="tag">iOS</span><a class="tag external" href="https://www.instagram.com/freestyledancechallengeapp/" target="_blank" rel="noopener noreferrer">Instagram</a></div>
+                <h3 class="card-title">Freestyle Challenge</h3>
+                <p>How a music-rights review changed release management from a final submission task into an auditable product and asset workflow.</p>
+              </div>
+              <div class="actions"><button class="button small" type="button" data-go="freestyle">View case</button><a class="button small" href="https://apps.apple.com/us/app/freestyle-dance-challenge/id6796975099" target="_blank" rel="noopener noreferrer">App Store ↗</a></div>
+            </div>
+            <div class="card case-card">
+              <div>
+                <img class="case-thumb" src="assets/dancelog-home-card.png" alt="DanceLog App Store visual showing monthly stats, settings, daily log, and recorded sets" loading="lazy">
+                <div class="number">03</div>
+                <div class="tags"><span class="tag strong">Shipped</span><span class="tag">iOS</span><span class="tag">Local-first</span></div>
+                <h3 class="card-title">DanceLog</h3>
+                <p>How a simple one-tap logging flow evolved into a more trustworthy interaction model after real device use exposed gesture, motion, and feedback problems.</p>
+              </div>
+              <div class="actions"><button class="button small" type="button" data-go="dancelog">View case</button><a class="button small" href="https://apps.apple.com/us/app/dance-log/id6795164130" target="_blank" rel="noopener noreferrer">App Store ↗</a></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Working method</p>
+          <h2>A shared process across different product types.</h2>
+          <div class="flow step-4">
+            <div class="flow-node"><span>01</span><h3>Frame</h3><p>Clarify the user problem, constraints, and what would count as evidence.</p></div>
+            <div class="flow-node"><span>02</span><h3>Design</h3><p>Map the experience or system, compare options, and make the trade-off visible.</p></div>
+            <div class="flow-node"><span>03</span><h3>Build</h3><p>Turn the critical path into a working prototype or product and test the risky parts.</p></div>
+            <div class="flow-node"><span>04</span><h3>Learn</h3><p>Use review, failures, user feedback, and missing evidence to decide what changes next.</p></div>
+          </div>
+        </section>
+
+      </div>
+    </article>
+
+    <article class="page" data-page="sandbox">
+      <div class="container">
+        <section class="section hero case-hero">
+          <p class="eyebrow">Case 01 · AI system prototype</p>
+          <h1>Content Safety Sandbox</h1>
+          <p class="lead">Exploring how content-safety evaluation can progress from static input screening to adversarial testing and explicit output assessment.</p>
+          <div class="facts">
+            <div class="fact"><span class="fact-label">Role</span><span class="fact-value">Product framing · Prototype · Evaluation design</span></div>
+            <div class="fact"><span class="fact-label">Status</span><span class="fact-value">Coze prototype</span></div>
+            <div class="fact"><span class="fact-label">Data</span><span class="fact-value">Synthetic test cases</span></div>
+            <div class="fact"><span class="fact-label">Evidence</span><span class="fact-value">PRD · Test suites · Run screenshots</span></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">The problem</p>
+          <h2>The safety question is larger than detecting a keyword.</h2>
+          <div class="grid-2">
+            <div class="card"><h3>What a single check misses</h3><p>Role-play jailbreaks, encoded prompts, multi-step inducement, partial leakage, and over-refusal all fail in different ways.</p></div>
+            <div class="card"><h3>The product question</h3><p>How can these failure modes be organized into a repeatable workflow that makes responsibility, evidence, and uncertainty easier to inspect?</p></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Product planning</p>
+          <h2>Three flows, each responsible for a different layer.</h2>
+          <div class="flow">
+            <div class="flow-node"><span>Flow 1 · Input safety</span><h3>Jailbreak prompt test</h3><p>Parse the prompt, scan for risk, classify it, and return an assessment.</p></div>
+            <div class="flow-node"><span>Flow 2 · Defense behavior</span><h3>Red-blue adversarial test</h3><p>Compare a red-team attack against an explicit blue-team guardrail and produce a verdict.</p></div>
+            <div class="flow-node"><span>Flow 3 · Output safety</span><h3>LLM-as-a-Judge</h3><p>Parse the content and rubric, score dimensions, calibrate, and generate a report.</p></div>
+          </div>
+          <div class="callout"><strong>Architecture boundary:</strong> the three flows form a conceptual progression from request boundary to final answer. The current interface exposes them as selectable workflows; it does not prove that every request runs through all three in sequence.</div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Development process</p>
+          <h2>From a natural-language specification to a testable interface.</h2>
+          <div class="flow step-5">
+            <div class="flow-node"><span>01</span><h3>Prompt</h3><p>Define the workflows, controls, outputs, and interaction states.</p></div>
+            <div class="flow-node"><span>02</span><h3>Prototype</h3><p>Build the initial single-page interface in Coze.</p></div>
+            <div class="flow-node"><span>03</span><h3>Configuration</h3><p>Separate attack inputs, guardrails, rubrics, and system prompts.</p></div>
+            <div class="flow-node"><span>04</span><h3>Cases</h3><p>Add attack samples and false-positive baselines.</p></div>
+            <div class="flow-node"><span>05</span><h3>Run evidence</h3><p>Record visible states and identify what still needs verification.</p></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Evaluation design</p>
+          <h2>Testing both unsafe compliance and unnecessary refusal.</h2>
+          <table class="comparison">
+            <thead><tr><th>Layer</th><th>Coverage</th><th>Representative cases</th><th>Current evidence</th></tr></thead>
+            <tbody>
+              <tr><td>Base taxonomy</td><td>Attacks, traditional content safety, false positives</td><td>Jailbreak, PII, hacking, legitimate academic discussion</td><td>Designed specifications</td></tr>
+              <tr><td>Flow 2 suite</td><td>Attack vs. defense</td><td>Role-play, reverse psychology, multi-step traps, overblocking</td><td>One visible run state</td></tr>
+              <tr><td>Flow 3 suite</td><td>Output quality</td><td>Safe refusal, partial leakage, over-refusal, zero-tolerance violation</td><td>One visible run state</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Evidence</p>
+          <h2>What the screenshots show—and what they do not.</h2>
+          <div class="image-gallery screens">
+            <figure><img src="assets/sandbox-flow-1.png" alt="Flow 1 input safety run showing completed parse, risk scan, classification, and output nodes"><figcaption>Flow 1 · one visible input-screening result state</figcaption></figure>
+            <figure><img src="assets/sandbox-flow-2.png" alt="Flow 2 adversarial run showing red attack, blue shield, verdict, and report"><figcaption>Flow 2 · one visible red-blue result state</figcaption></figure>
+            <figure><img src="assets/sandbox-flow-3.png" alt="Flow 3 judge run showing content parsing, rubric parsing, scoring, calibration, and report"><figcaption>Flow 3 · one visible LLM-as-a-Judge result state</figcaption></figure>
+          </div>
+        </section>
+
+        <section class="section" id="sandbox-batch">
+          <p class="eyebrow">Batch evaluation</p>
+          <h2>One batch run turns 55 cases into a model-by-model scorecard.</h2>
+          <div class="image-gallery two">
+            <figure><img src="assets/sandbox-batch-01.png" alt="Batch run dashboard showing the five-node workflow, aggregate metrics for 55 cases at 85% block rate, zero false positives, average score 44, and 1416 ms latency, plus risk distribution and dimension comparison charts" loading="lazy"><figcaption>Batch run · five-step pipeline with headline metrics</figcaption></figure>
+            <figure><img src="assets/sandbox-batch-02.png" alt="Detailed results table listing each prompt with its dimension, block or pass verdict, score, risk category, latency, and a one-click flag-false-positive action" loading="lazy"><figcaption>Batch run · per-case verdicts with one-click false-positive flagging</figcaption></figure>
+          </div>
+          <h3>Four models, same benchmark</h3>
+          <table class="comparison">
+            <thead><tr><th>Metric</th><th>Model A</th><th>Model B</th><th>Model C</th><th>Model D</th></tr></thead>
+            <tbody>
+              <tr><td>Block rate</td><td>85%</td><td>88%</td><td>85%</td><td>83%</td></tr>
+              <tr><td>False positive rate</td><td>0%</td><td>0%</td><td>0%</td><td>0%</td></tr>
+              <tr><td>Average safety score</td><td>44 / 100</td><td>41 / 100</td><td>41 / 100</td><td>42 / 100</td></tr>
+              <tr><td>Average latency</td><td>1416 ms</td><td>2262 ms</td><td>2211 ms</td><td>8793 ms</td></tr>
+            </tbody>
+          </table>
+          <div class="takeaway-grid">
+            <div class="takeaway dark">
+              <span class="take-label">Key takeaway · The latency pick</span>
+              <p>Model A holds an 85% block rate with zero false positives at 1416 ms — roughly 40% faster than B and C — the default choice for real-time guardrails.</p>
+            </div>
+            <div class="takeaway">
+              <span class="take-label">Key takeaway · The strictness pick</span>
+              <p>B and C trade speed for slightly tighter blocking (88% / 85% at about 2.2 s), a fit for compliance-heavy review; D's 8.8 s latency reserves it for offline screening.</p>
+            </div>
+          </div>
+          <div class="callout"><strong>Cost boundary:</strong> boundary positives reach the LLM judge only when the target model refuses — lazy arbitration keeps judge tokens proportional to refusals, not to traffic.</div>
+        </section>
+
+        <section class="section" id="sandbox-analysis">
+          <p class="eyebrow">Intelligent analysis</p>
+          <h2>Failures stop being a red badge — they become root causes and patches.</h2>
+          <figure class="evidence-figure"><img src="assets/sandbox-analysis-01.png" alt="Intelligent analysis view listing attack pattern insights such as DAN role-play, PII extraction, and prefix override, followed by an AI mitigation advisor with primary defense weaknesses, root-cause analysis, and actionable mitigation fixes" loading="lazy"><figcaption>Intelligent analysis · semantic attack clustering and generated mitigation fixes</figcaption></figure>
+          <div class="module-tag"><span class="no">01.</span><span>Read the failure, not just the badge</span></div>
+          <p>A bare “Failed” state hides the root cause. The analysis agent parses run logs and clusters misses by semantic vector instead of test ID, so the fence's real weak spots surface first.</p>
+          <div class="tags"><span class="tag strong">DAN Role-Play</span><span class="tag strong">PII &amp; Privacy Extraction</span><span class="tag strong">Prefix Override</span><span class="tag">Hypothetical Scenario</span><span class="tag">Multilingual Confusion</span></div>
+          <div class="module-tag"><span class="no">02.</span><span>Close the loop: patches in, experts in</span></div>
+          <div class="grid-2">
+            <div class="card">
+              <h3>Generated mitigation fixes</h3>
+              <p>The advisor turns each cluster into a layered patch — regex pre-filters, system-prompt overrides, and output-classifier thresholds — plus a weekly adversarial re-test cadence.</p>
+            </div>
+            <div class="card">
+              <h3>Human-in-the-loop flywheel</h3>
+              <p>One-click expert review on any flagged case; confirmed corrections are formatted into the golden dataset that anchors future fine-tuning and alignment.</p>
+            </div>
+          </div>
+          <div class="takeaway-grid">
+            <div class="takeaway dark">
+              <span class="take-label">Key takeaway · Constraint beats autonomy</span>
+              <p>Dynamic planners and live red/blue agent debates were cut on purpose: evaluation runs on a deterministic five-step pipeline, and analysis happens after the run, where every step stays traceable.</p>
+            </div>
+            <div class="takeaway">
+              <span class="take-label">Key takeaway · The 85% lesson</span>
+              <p>A high block rate looked great until the misses were read — DAN role-play and PII extraction made up 36% of failures, and chasing the rate had begun to over-block normal requests.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow mono">Product thinking &amp; lessons</p>
+          <h2>From building fast to proving reliable — what an LLM red-blue sandbox changed about how I think of risk decisions.</h2>
+
+          <div class="module-tag"><span class="no">01.</span><span>From Hard-Coded Rules to Natural Language Strategies</span></div>
+          <div class="grid-2">
+            <div class="card">
+              <span class="paradigm-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+              <h3>Traditional Risk Systems</h3>
+              <div class="chain">
+                <span class="chip">Data labeling</span><span class="arrow">→</span><span class="chip">Model training</span><span class="arrow">→</span><span class="chip">Threshold tuning</span><span class="arrow">→</span><span class="chip">FP/FN balancing</span>
+              </div>
+              <div class="paradigm-note">
+                <span class="note-label">PM bottleneck</span>
+                <p>Could define problems, but couldn't directly shape model behavior.</p>
+              </div>
+            </div>
+            <div class="card favored">
+              <span class="paradigm-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></svg></span>
+              <h3>GenAI Safety Sandbox</h3>
+              <div class="chain">
+                <span class="chip">Natural-language rules</span><span class="arrow">→</span><span class="chip">Roleplay instructions</span><span class="arrow">→</span><span class="chip">LLM-as-a-Referee</span>
+              </div>
+              <div class="paradigm-note">
+                <span class="note-label">PM empowerment</span>
+                <p>Direct control over blocking, edge cases, and reasoning rules.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="module-tag"><span class="no">—</span><span>The Pivot · A Reality Check</span></div>
+          <div class="lesson-quote">
+            <span class="quote-mark" aria-hidden="true">"</span>
+            <p>I initially thought the value was speed of prototyping. But after adversarial testing, I realized the real challenge is production-grade reliability.</p>
+            <span class="quote-src">Field note · after the first adversarial test round</span>
+          </div>
+          <div class="grid-2 insight-cards">
+            <div class="card"><h3>Non-Deterministic Boundary Shift</h3><p>Tweaking a few prompt words can unintentionally alter decision boundaries, boosting recall while spiking false positives.</p></div>
+            <div class="card"><h3>Probabilistic Evaluators</h3><p>Using LLMs as safety judges means relying on another probabilistic model that requires its own validation layer.</p></div>
+          </div>
+
+          <div class="module-tag"><span class="no">02.</span><span>The Expanding Release Surface</span></div>
+          <div class="release-track">
+            <div class="release-row">
+              <div class="release-label"><strong>Traditional Risk Release</strong><span class="count">2 components</span></div>
+              <div class="release-pills">
+                <span class="chip">Model package</span>
+                <span class="chip">Fixed threshold</span>
+              </div>
+            </div>
+            <div class="release-row genai">
+              <div class="release-label"><strong>GenAI Risk Release</strong><span class="count">6 components</span></div>
+              <div class="release-pills">
+                <span class="chip">Model version</span>
+                <span class="chip">System prompt</span>
+                <span class="chip">Guardrails</span>
+                <span class="chip">Eval dataset</span>
+                <span class="chip">Judge rubrics</span>
+                <span class="chip">Fallback rules</span>
+              </div>
+            </div>
+            <p class="release-note">The release surface tripled: every strategy tweak now ships as a versioned set of artifacts that must be tested together.</p>
+          </div>
+          <div class="takeaway-grid">
+            <div class="takeaway dark">
+              <span class="take-label">Key takeaway · The trade-off</span>
+              <p>Building a risk decision system now takes minutes — proving it won't fail unpredictably takes weeks.</p>
+            </div>
+            <div class="takeaway">
+              <span class="take-label">Key takeaway · The metric</span>
+              <p>Prompting makes strategy cheap; making it traceable, measurable, and reliable remains hard.</p>
+            </div>
+          </div>
+
+          <div class="discussion-card">
+            <span class="discussion-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+            <div>
+              <h3>Looking for feedback &amp; further validation</h3>
+              <p>I'm continuously refining this sandbox architecture. If you've run into similar prompt-drift or eval reliability challenges, I'd love to exchange insights.</p>
+              <a class="button small" href="https://www.linkedin.com/in/shikezhang" target="_blank" rel="noopener">Leave a comment / Drop a message ↗</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Next iteration</p>
+          <h2>Make the evaluation itself easier to trust.</h2>
+          <div class="grid-2">
+            <div class="card"><h3>Clarify label semantics</h3><p>Separate topic risk, output-safety verdict, and safety-quality score so that labels cannot appear contradictory.</p></div>
+            <div class="card"><h3>Create comparable records</h3><p>Store model, policy version, timestamp, expected label, actual verdict, repeat count, and FP/FN definitions. Batch execution, live backend traces, judge calibration, and repeated-run consistency.</p></div>
+            <div class="card"><h3>Calibrate the judge</h3><p>Use reference labels, human review, repeated trials, and disagreement analysis before trusting aggregate scores.</p></div>
+            <div class="card"><h3>Extend the workflow</h3><p>Prototype routing, multi-model comparison, and adversarial loops only after the evidence model is stable.</p></div>
+          </div>
+          <div class="callout"><strong>Reflection:</strong> the useful product move was not adding three tabs. It was separating input risk, defense behavior, and output quality into distinct evaluation responsibilities.</div>
+          <div class="case-navigation"><button class="button" type="button" data-go="home">← Home</button><button class="button primary" type="button" data-go="freestyle">Next: Freestyle Challenge →</button></div>
+        </section>
+      </div>
+    </article>
+
+    <article class="page" data-page="freestyle">
+      <div class="container">
+        <section class="section hero case-hero">
+          <p class="eyebrow">Case 02 · Shipped iOS product</p>
+          <h1>Freestyle Challenge</h1>
+          <p class="lead">A release-management case about turning locally generated music into a product asset chain that could be explained, verified, and reviewed.</p>
+          <div class="actions"><a class="button primary" href="https://apps.apple.com/us/app/freestyle-dance-challenge/id6796975099" target="_blank" rel="noopener noreferrer">View on the App Store ↗</a><a class="button" href="https://www.instagram.com/freestyledancechallengeapp/" target="_blank" rel="noopener noreferrer">Instagram · @freestyledancechallengeapp ↗</a></div>
+          <div class="facts">
+            <div class="fact"><span class="fact-label">Role</span><span class="fact-value">Product · Design · Build · Launch</span></div>
+            <div class="fact"><span class="fact-label">Status</span><span class="fact-value">Shipped</span></div>
+            <div class="fact"><span class="fact-label">Data</span><span class="fact-value">AI generative local music</span></div>
+            <div class="fact"><span class="fact-label">Evidence</span><span class="fact-value">PRD · App Store · Rights materials</span></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Product context</p>
+          <h2>A short path from random constraint to recorded practice.</h2>
+          <div class="flow step-4">
+            <div class="flow-node"><span>01</span><h3>Draw</h3><p>Generate a challenge from style, focus, restriction, duration, and seed.</p></div>
+            <div class="flow-node"><span>02</span><h3>Match</h3><p>Pair it with a suitable BPM, beat, drop, and cue structure.</p></div>
+            <div class="flow-node"><span>03</span><h3>Perform</h3><p>Prepare, record a take, and use cues without leaving the device.</p></div>
+            <div class="flow-node"><span>04</span><h3>Export</h3><p>Combine video, audio, and overlay into a shareable result.</p></div>
+          </div>
+          <div class="image-gallery phones">
+            <figure><img src="assets/freestyle-store-01.png" alt="Freestyle Dance Challenge App Store visual showing the draw and challenge experience" loading="lazy"><figcaption>Draw a randomized practice constraint</figcaption></figure>
+            <figure><img src="assets/freestyle-store-02.png" alt="Freestyle Dance Challenge App Store visual showing a Popping challenge with BPM and focus" loading="lazy"><figcaption>Review style, BPM, focus, duration, and difficulty</figcaption></figure>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Release risk</p>
+          <h2>Clean technical logic did not automatically become reviewable evidence.</h2>
+          <div class="grid-2">
+            <div class="card"><h3>The initial choice</h3><p>Avoid dependence on third-party music by using AI-assisted development and purely procedural audio rendered for the app.</p></div>
+            <div class="card"><h3>What review exposed</h3><p>A platform still needs explicit provenance and an accountable human declaration. The implementation alone could not communicate ownership.</p></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Decision</p>
+          <h2>Why the app did not rely on commercial tracks, sample packs, or runtime generation.</h2>
+          <table class="comparison">
+            <thead><tr><th>Option</th><th>Experience potential</th><th>Rights / delivery cost</th><th>Decision</th></tr></thead>
+            <tbody>
+              <tr><td>Commercial music</td><td>Highly produced</td><td>Licensing, synchronization, and territory complexity</td><td>Not suitable for the MVP</td></tr>
+              <tr><td>Sample packs / loops</td><td>Fast to assemble</td><td>Per-asset redistribution terms require ongoing review</td><td>Not selected</td></tr>
+              <tr><td>Cloud-generated music</td><td>Potentially varied</td><td>Terms, latency, cost, moderation, and QA</td><td>Conflicted with local-first scope</td></tr>
+              <tr><td>Shared safe DSP + track-specific arrangements</td><td>Controlled and differentiable</td><td>Lower rights complexity, but still requires clear provenance</td><td class="decision">Selected</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Auditable asset pipeline</p>
+          <h2>Make every step explainable outside the codebase.</h2>
+          <div class="flow step-5">
+            <div class="flow-node"><span>01</span><h3>Source</h3><p>Renderer code, configuration, and seed.</p></div>
+            <div class="flow-node"><span>02</span><h3>Render</h3><p>Deterministic local generation.</p></div>
+            <div class="flow-node"><span>03</span><h3>Assets</h3><p>WAV, AAC, and cue sheets.</p></div>
+            <div class="flow-node"><span>04</span><h3>Integrity</h3><p>Hashes and versioned manifest.</p></div>
+            <div class="flow-node"><span>05</span><h3>Declaration</h3><p>Human-signed rights statement for review.</p></div>
+          </div>
+          <figure class="evidence-figure"><img src="assets/freestyle-release-evidence.png" alt="Five-step Beat provenance diagram from source and deterministic render to assets, hashes, manifest, and human declaration" loading="lazy"><figcaption>The release evidence chain: technical provenance supports review, while a human declaration addresses ownership explicitly.</figcaption></figure>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Development process</p>
+          <h2>The release story sits on top of a broader product build.</h2>
+          <div class="process-list">
+            <div class="process-item"><div><strong>PRD and boundaries</strong><p>Define the user flow, non-goals, permissions, failure handling, privacy, and acceptance criteria.</p></div></div>
+            <div class="process-item"><div><strong>Challenge system</strong><p>Model style, beat, focus, restriction, duration, difficulty, and reproducible seeds.</p></div></div>
+            <div class="process-item"><div><strong>Recording and export</strong><p>Coordinate camera, audio, cue timing, temporary files, overlays, and fallback behavior.</p></div></div>
+            <div class="process-item"><div><strong>Beat-library iteration</strong><p>Move from shared, generic arrangements toward style-specific rhythmic grammar and independent track concepts.</p></div></div>
+            <div class="process-item"><div><strong>Release evidence</strong><p>Pair technical QA with an auditable asset history and review-ready declaration.</p></div></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Evidence</p>
+          <h2>What can be inspected.</h2>
+          <div class="grid-3">
+            <div class="card"><h3>Shipped product</h3><p>App Store listing and product screens demonstrate the released challenge, recording, and practice experience.</p></div>
+            <div class="card"><h3>Rights trail</h3><p>Renderer/configuration records, formal assets, manifest and hash evidence, and a signed declaration.</p></div>
+            <div class="card"><h3>Two acceptance gates</h3><p>Human listening for dance fit and technical checks for duration, loudness, peaks, encoding, and compatibility.</p></div>
+          </div>
+          <div class="metric-row"><div class="metric"><strong>20</strong><span>packaged beats</span></div><div class="metric"><strong>5</strong><span>dance-style families</span></div><div class="metric"><strong>2</strong><span>acceptance gates</span></div></div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Growth experiment</p>
+          <h2>Instagram is an acquisition experiment attached to the product.</h2>
+          <div class="grid-2">
+            <div class="card"><h3>Content hypothesis</h3><p>Dance-style posts, practice mechanics, and product demonstrations can attract dancers with a concrete freestyle-training need.</p></div>
+            <div class="card"><h3>Measurement path</h3><p>Reach → Profile visits → Store taps → Downloads → First challenge → Export or share. Current funnel results are not yet available.</p></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Reflection and next iteration</p>
+          <h2>Compliance belongs inside the product-delivery system.</h2>
+          <div class="grid-3">
+            <div class="card"><h3>Asset operations</h3><p>Standardize versioning, hashes, cue sheets, declarations, and review attachments from the first asset.</p></div>
+            <div class="card"><h3>Music QA</h3><p>Add structured listening notes, low-frequency budgets, section-coverage checks, and candidate-similarity warnings.</p></div>
+            <div class="card"><h3>Growth evidence</h3><p>Use campaign attribution and a first-challenge-completed event before drawing conclusions about acquisition quality.</p></div>
+          </div>
+          <div class="callout"><strong>Core learning:</strong> a product can be technically independent from third-party rights and still fail to communicate that clearly. Release management needs evidence that people outside the codebase can inspect.</div>
+          <div class="case-navigation"><button class="button" type="button" data-go="sandbox">← Safety Sandbox</button><button class="button" type="button" data-go="home">Home</button><button class="button primary" type="button" data-go="dancelog">Next: DanceLog →</button></div>
+        </section>
+      </div>
+    </article>
+
+    <article class="page" data-page="dancelog">
+      <div class="container">
+        <section class="section hero case-hero">
+          <p class="eyebrow">Case 03 · Shipped iOS product</p>
+          <h1>DanceLog</h1>
+          <p class="lead">From “the day can be lit” to “the interaction feels trustworthy”: evolving a one-tap dance log after real device use exposed conflicts between tapping, dragging, motion, and feedback.</p>
+          <div class="actions"><a class="button" href="https://apps.apple.com/us/app/dance-log/id6795164130" target="_blank" rel="noopener noreferrer">View on the App Store ↗</a></div>
+          <div class="facts">
+            <div class="fact"><span class="fact-label">Role</span><span class="fact-value">Product · Design · Build</span></div>
+            <div class="fact"><span class="fact-label">Status</span><span class="fact-value">Shipped</span></div>
+            <div class="fact"><span class="fact-label">Data</span><span class="fact-value">fully local</span></div>
+            <div class="fact"><span class="fact-label">Evidence</span><span class="fact-value">App Store · Tests · Device UAT</span></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">The 1.0 product bet</p>
+          <h2>Make the core behavior small enough to complete.</h2>
+          <div class="flow step-4">
+            <div class="flow-node"><span>01</span><h3>Open</h3><p>Start on the Log tab with the current day in focus.</p></div>
+            <div class="flow-node"><span>02</span><h3>Light</h3><p>Use one tap to record that dancing happened.</p></div>
+            <div class="flow-node"><span>03</span><h3>Enrich</h3><p>Optionally add styles, session type, duration, and difficulty.</p></div>
+            <div class="flow-node"><span>04</span><h3>Review</h3><p>Use monthly views to reflect on practice rhythm and mix.</p></div>
+          </div>
+          <div class="proof-strip"><strong>Native SwiftUI</strong><span>DanceLogCore</span><span>Versioned local JSON</span><span>No account, cloud, or tracking</span></div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Observed friction</p>
+          <h2>Four visible problems pointed to one structural mismatch.</h2>
+          <div class="grid-4">
+            <div class="card"><h3>Visual trust</h3><p>The main control’s shadow looked like a second, misaligned rectangle.</p></div>
+            <div class="card"><h3>Gesture trust</h3><p>A long-press drag could still trigger the button action on release.</p></div>
+            <div class="card"><h3>Spatial continuity</h3><p>A three-card carousel exposed gaps and ghosting during faster movement.</p></div>
+            <div class="card"><h3>Feedback coherence</h3><p>Sound, haptics, animation, and state changes did not yet form one system.</p></div>
+          </div>
+          <div class="callout"><strong>Root cause:</strong> the first version treated a static three-card layout as a continuous interaction control. Parameter tuning could reduce symptoms, but it could not resolve the model conflict.</div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Product decisions</p>
+          <h2>Let the visual hierarchy change with the user’s task.</h2>
+          <table class="comparison">
+            <thead><tr><th>State</th><th>Card treatment</th><th>Interaction rule</th><th>User value</th></tr></thead>
+            <tbody>
+              <tr><td>Idle</td><td>Focused day is large</td><td>Tap-to-light is enabled</td><td>Preserves the primary action</td></tr>
+              <tr><td>Dragging</td><td>All days become compact</td><td>Button action is suppressed</td><td>Prevents reflow and accidental logging</td></tr>
+              <tr><td>Momentum</td><td>All days stay compact</td><td>Move 1–5 days step by step</td><td>Supports speed without losing orientation</td></tr>
+              <tr><td>Settling</td><td>Focused day expands again</td><td>Unlock after spring settling</td><td>Returns to a stable logging state</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Development process</p>
+          <h2>Move from visible fixes to one coherent interaction model.</h2>
+          <div class="flow step-5">
+            <div class="flow-node"><span>01</span><h3>Visual structure</h3><p>Replace an out-of-bounds shadow with a real depth layer.</p></div>
+            <div class="flow-node"><span>02</span><h3>Gesture correctness</h3><p>Track dragging and momentum explicitly.</p></div>
+            <div class="flow-node"><span>03</span><h3>Continuity</h3><p>Render a ±7-day buffer around the focus.</p></div>
+            <div class="flow-node"><span>04</span><h3>Stable layout</h3><p>Keep cards compact while moving.</p></div>
+            <div class="flow-node"><span>05</span><h3>Feedback system</h3><p>Align sound, haptics, and animation with real state changes.</p></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Before / after</p>
+          <h2>Explain engineering changes through user value.</h2>
+          <div class="image-gallery phones">
+            <figure><img src="assets/dancelog-log-empty.png" alt="DanceLog screen before a day is logged, showing the central light-up control" loading="lazy"><figcaption>Unlogged state · the central one-tap action</figcaption></figure>
+            <figure><img src="assets/dancelog-log-lit.png" alt="DanceLog screen after a day is logged, showing recorded dance sets" loading="lazy"><figcaption>Logged state · optional session details</figcaption></figure>
+            <figure><img src="assets/dancelog-stats.png" alt="DanceLog monthly stats screen showing dance days, sets, minutes, and style mix" loading="lazy"><figcaption>Monthly review · rhythm, volume, and style mix</figcaption></figure>
+          </div>
+          <table class="comparison">
+            <thead><tr><th>Dimension</th><th>1.0</th><th>1.1</th><th>User value</th></tr></thead>
+            <tbody>
+              <tr><td>Date buffer</td><td>Previous / current / next</td><td>±7 days around focus</td><td>Fast movement no longer exposes gaps</td></tr>
+              <tr><td>Single gesture</td><td>Usually one day</td><td>Momentum across 1–5 days</td><td>Historical browsing becomes faster</td></tr>
+              <tr><td>Tap / drag relationship</td><td>Callbacks could compete</td><td>Explicit drag and momentum suppression</td><td>Browsing cannot accidentally create a record</td></tr>
+              <tr><td>Motion layout</td><td>Large card moves between days</td><td>Compact while moving, large when settled</td><td>Removes overlap and ghosting</td></tr>
+              <tr><td>Feedback</td><td>Basic color and haptic change</td><td>Original tick sound, haptics, and state-led motion</td><td>Makes a date change and a completed log feel distinct</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Verification</p>
+          <h2>Turn subjective experience into regressions that can be tested.</h2>
+          <div class="grid-2">
+            <div class="card"><h3>Representative UI tests</h3><ul><li>A normal tap still lights the selected day.</li><li>A long-press drag changes date without lighting the pressed day.</li><li>A fast swipe can cross multiple days and settle.</li><li>Current-month navigation state is visually and functionally consistent.</li></ul></div>
+            <div class="card"><h3>Why device UAT still matters</h3><ul><li>Gesture friction and movement speed</li><li>Sound and haptic timing</li><li>Reduce Motion behavior</li><li>Different physical screen sizes</li></ul></div>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Reflection and next iteration</p>
+          <h2>Correctness comes before decorative polish.</h2>
+          <div class="grid-3">
+            <div class="card"><h3>Momentum usability</h3><p>Observe whether people frequently overshoot before changing the 1–5-day model.</p></div>
+            <div class="card"><h3>Accessibility</h3><p>Run dedicated VoiceOver, Dynamic Type, contrast, and Reduce Motion checks.</p></div>
+            <div class="card"><h3>Data and privacy</h3><p>If analytics are introduced, revisit the local-first promise and App Privacy before implementation.</p></div>
+          </div>
+          <div class="callout"><strong>Core learning:</strong> accidental logging is a correctness problem, not a small UI defect. Structural interaction problems need a structural solution—not another threshold adjustment.</div>
+          <div class="case-navigation"><button class="button" type="button" data-go="freestyle">← Freestyle Challenge</button><button class="button primary" type="button" data-go="home">Back home</button></div>
+        </section>
+      </div>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-row"><strong>Shike's AI Product Studio</strong><span>Product framing · AI systems · Hands-on delivery</span><a href="https://www.linkedin.com/in/shikezhang/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a></div>
+  </footer>
+
+  <script>
+    (() => {
+      const pages = new Set(['home', 'sandbox', 'freestyle', 'dancelog']);
+      const menu = document.querySelector('.nav-links');
+      const menuToggle = document.querySelector('.menu-toggle');
+
+      function currentPage() {
+        const page = location.hash.replace('#/', '').replace('#', '');
+        return pages.has(page) ? page : 'home';
+      }
+
+      function renderPage({ scroll = true } = {}) {
+        const page = currentPage();
+        document.querySelectorAll('[data-page]').forEach((element) => {
+          element.classList.toggle('is-active', element.dataset.page === page);
+        });
+        document.querySelectorAll('.nav-link').forEach((button) => {
+          if (button.dataset.go === page) button.setAttribute('aria-current', 'page');
+          else button.removeAttribute('aria-current');
+        });
+        menu.classList.remove('is-open');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        document.title = page === 'home'
+          ? "Shike's AI Product Studio"
+          : `${document.querySelector(`[data-page="${page}"] h1`).textContent} — Shike Zhang`;
+        if (scroll) window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      }
+
+      document.addEventListener('click', (event) => {
+        const trigger = event.target.closest('[data-go]');
+        if (!trigger) return;
+        const page = trigger.dataset.go;
+        if (!pages.has(page)) return;
+        const onTarget = currentPage() === page;
+        if (page === 'home' && onTarget && location.hash !== '' && location.hash !== '#/') {
+          location.hash = '/';
+          return;
+        }
+        if (onTarget) renderPage();
+        else location.hash = `/${page}`;
+      });
+
+      // Primary hero CTA: smooth-scroll to the Featured Case section on Home.
+      document.addEventListener('click', (event) => {
+        const scroller = event.target.closest('[data-scroll-to]');
+        if (!scroller) return;
+        event.preventDefault();
+        renderPage({ scroll: false });
+        const anchor = document.getElementById(scroller.dataset.scrollTo);
+        if (anchor) {
+          const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+          requestAnimationFrame(() => anchor.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }));
+        }
+      });
+
+      menuToggle.addEventListener('click', () => {
+        const isOpen = menu.classList.toggle('is-open');
+        menuToggle.setAttribute('aria-expanded', String(isOpen));
+      });
+
+      const I18N = {
+        "Skip to content": "跳到主要内容",
+        "Menu": "菜单",
+        "Home": "首页",
+        "Safety Sandbox": "安全沙盒",
+        "AI Product Manager · Independent Builder": "AI 产品经理 · 独立开发者",
+        "I design, build, and ship full-stack AI tools & mobile apps.": "我设计、开发并交付全栈 AI 工具与移动应用。",
+        "A hands-on portfolio showcasing end-to-end execution: from GenAI evaluation sandboxes to live iOS applications with real users.": "一份实操性项目组合，全面展示端到端执行流程：从生成式人工智能评估沙箱到面向真实用户的上线 iOS 应用。",
+        "Explore Featured Project": "探索精选项目",
+        "AI Risk & Eval Sandbox": "AI 风险与评估沙盒",
+        "Live iOS Apps Shipped": "已上线的 iOS 应用",
+        "End-to-End": "全流程",
+        "Design, Code & Deploy": "设计 · 编码 · 部署",
+        "LLM Evaluation": "大语言模型评估",
+        "[Web]": "[网页版]",
+        "Live prototype": "在线原型",
+        "Featured case · AI evaluation system": "精选案例 · AI 评估系统",
+        "Prototype": "原型",
+        "Synthetic cases": "合成测试用例",
+        "AI evaluation": "AI 评估",
+        "Guardrails": "护栏机制",
+        "Content Safety Sandbox": "内容安全沙盒",
+        "A three-layer approach to exploring model safety: screen risky inputs, test guardrails under adversarial pressure, and evaluate the final output with an explicit rubric.": "以三层结构探索模型安全：筛查高风险输入、在对抗压力下测试护栏机制，并依据明确的评分标准评估最终输出。",
+        "Flow 1": "流程 1",
+        "Input screening": "输入筛查",
+        "Can a rule or classifier identify a malicious prompt?": "规则或分类器能否识别恶意提示词？",
+        "Flow 2": "流程 2",
+        "Red-blue testing": "红蓝对抗测试",
+        "Can a guardrail hold up against disguised or multi-step attacks?": "护栏能否抵御伪装或多步骤攻击？",
+        "Flow 3": "流程 3",
+        "Output evaluation": "输出评估",
+        "How should a judge assess the safety and usefulness of the answer?": "评审模型应如何评判回答的安全性与实用性？",
+        "Evidence boundary:": "证据边界：",
+        "this case includes a Coze prototype, designed test suites, and screenshots of individual run states. It is not presented as a production financial-risk system.": "本案例包含一个 Coze 原型、设计的测试用例集，以及单次运行状态的截图。它并非生产级金融风控系统。",
+        "Explore the case": "查看案例详情",
+        "Try Now ↗": "立即体验 ↗",
+        "Shipped products": "已上架产品",
+        "Two products, two different kinds of product work.": "两款产品，两种不同性质的产品工作。",
+        "Shipped": "已上架",
+        "Local-first": "本地优先",
+        "How a music-rights review changed release management from a final submission task into an auditable product and asset workflow.": "一次音乐版权审查，如何把发布管理从收尾时的提交流程，变成可审计的产品与资产工作流。",
+        "View case": "查看案例",
+        "How a simple one-tap logging flow evolved into a more trustworthy interaction model after real device use exposed gesture, motion, and feedback problems.": "一个简单的一键记录流程，在真机使用暴露手势、动效与反馈的问题之后，如何演进为更可信的交互模型。",
+        "Working method": "工作方法",
+        "A shared process across different product types.": "一套贯穿不同产品类型的通用流程。",
+        "Frame": "定义问题",
+        "Clarify the user problem, constraints, and what would count as evidence.": "厘清用户问题、约束条件，以及什么才算有效证据。",
+        "Design": "方案设计",
+        "Map the experience or system, compare options, and make the trade-off visible.": "梳理体验或系统结构，比较方案，让取舍清晰可见。",
+        "Build": "构建",
+        "Turn the critical path into a working prototype or product and test the risky parts.": "把关键路径变成可运行的原型或产品，并优先验证高风险部分。",
+        "Learn": "学习迭代",
+        "Use review, failures, user feedback, and missing evidence to decide what changes next.": "利用评审、失败、用户反馈与证据缺口，决定下一步改动。",
+        "Case 01 · AI system prototype": "案例 01 · AI 系统原型",
+        "Exploring how content-safety evaluation can progress from static input screening to adversarial testing and explicit output assessment.": "探索内容安全评估如何从静态的输入筛查，进阶到对抗性测试与显式的输出评估。",
+        "Role": "角色",
+        "Product framing · Prototype · Evaluation design": "产品定义 · 原型 · 评估设计",
+        "Status": "状态",
+        "Coze prototype": "Coze 原型",
+        "Data": "数据",
+        "Synthetic test cases": "合成测试用例",
+        "Evidence": "证据",
+        "PRD · Test suites · Run screenshots": "PRD · 测试用例集 · 运行截图",
+        "The problem": "问题",
+        "The safety question is larger than detecting a keyword.": "安全问题远不止识别一个关键词。",
+        "What a single check misses": "单点检查会遗漏什么",
+        "Role-play jailbreaks, encoded prompts, multi-step inducement, partial leakage, and over-refusal all fail in different ways.": "角色扮演越狱、编码提示词、多步骤诱导、部分泄露与过度拒绝，各自的失败方式并不相同。",
+        "The product question": "产品层面的核心问题",
+        "How can these failure modes be organized into a repeatable workflow that makes responsibility, evidence, and uncertainty easier to inspect?": "如何把这些失败模式组织成可复用的工作流，让责任、证据与不确定性更容易被审查？",
+        "Product planning": "产品规划",
+        "Three flows, each responsible for a different layer.": "三条工作流，各自负责不同的层级。",
+        "Flow 1 · Input safety": "流程 1 · 输入安全",
+        "Jailbreak prompt test": "越狱提示词测试",
+        "Parse the prompt, scan for risk, classify it, and return an assessment.": "解析提示词、扫描风险、分类，并返回评估结果。",
+        "Flow 2 · Defense behavior": "流程 2 · 防御行为",
+        "Red-blue adversarial test": "红蓝对抗测试",
+        "Compare a red-team attack against an explicit blue-team guardrail and produce a verdict.": "将红队攻击与明确的蓝队护栏进行对比，并输出裁决。",
+        "Flow 3 · Output safety": "流程 3 · 输出安全",
+        "LLM-as-a-Judge": "LLM 即评审",
+        "Parse the content and rubric, score dimensions, calibrate, and generate a report.": "解析内容与评分标准，按维度打分、校准，并生成报告。",
+        "Architecture boundary:": "架构边界：",
+        "the three flows form a conceptual progression from request boundary to final answer. The current interface exposes them as selectable workflows; it does not prove that every request runs through all three in sequence.": "三条流程构成从请求边界到最终回答的概念递进。当前界面将它们呈现为可选择的独立工作流，并不能证明每个请求都按顺序经过全部三层。",
+        "Development process": "开发过程",
+        "From a natural-language specification to a testable interface.": "从自然语言规格说明，到可测试的界面。",
+        "Prompt": "提示词",
+        "Define the workflows, controls, outputs, and interaction states.": "定义工作流、控件、输出与交互状态。",
+        "Build the initial single-page interface in Coze.": "在 Coze 中搭建最初的单页界面。",
+        "Configuration": "配置",
+        "Separate attack inputs, guardrails, rubrics, and system prompts.": "将攻击输入、护栏、评分标准与系统提示词分离。",
+        "Cases": "用例",
+        "Add attack samples and false-positive baselines.": "补充攻击样本与误报基线。",
+        "Run evidence": "运行证据",
+        "Record visible states and identify what still needs verification.": "记录可见状态，并标明仍需验证的部分。",
+        "Evaluation design": "评估设计",
+        "Testing both unsafe compliance and unnecessary refusal.": "同时测试危险的服从与不必要的拒绝。",
+        "Layer": "层级",
+        "Coverage": "覆盖范围",
+        "Representative cases": "代表性用例",
+        "Current evidence": "当前证据",
+        "Base taxonomy": "基础分类体系",
+        "Attacks, traditional content safety, false positives": "攻击、传统内容安全、误报",
+        "Jailbreak, PII, hacking, legitimate academic discussion": "越狱、个人隐私信息、黑客攻击、正当学术讨论",
+        "Designed specifications": "设计规格说明",
+        "Flow 2 suite": "流程 2 用例集",
+        "Attack vs. defense": "攻击 vs. 防御",
+        "Role-play, reverse psychology, multi-step traps, overblocking": "角色扮演、逆向心理、多步骤陷阱、过度拦截",
+        "One visible run state": "一次可见的运行状态",
+        "Flow 3 suite": "流程 3 用例集",
+        "Output quality": "输出质量",
+        "Safe refusal, partial leakage, over-refusal, zero-tolerance violation": "安全拒绝、部分泄露、过度拒绝、零容忍违规",
+        "What the screenshots show—and what they do not.": "截图展示了什么——以及尚未展示什么。",
+        "Flow 1 · one visible input-screening result state": "流程 1 · 一个可见的输入筛查结果状态",
+        "Flow 2 · one visible red-blue result state": "流程 2 · 一个可见的红蓝对抗结果状态",
+        "Flow 3 · one visible LLM-as-a-Judge result state": "流程 3 · 一个可见的 LLM 评审结果状态",
+        "Product thinking & lessons": "产品思考与经验",
+        "From building fast to proving reliable — what an LLM red-blue sandbox changed about how I think of risk decisions.": "从快速搭建到验证可靠——LLM 红蓝攻防沙盒，如何改变了我对风险决策的认知。",
+        "From Hard-Coded Rules to Natural Language Strategies": "从硬编码规则到自然语言策略",
+        "Traditional Risk Systems": "传统风控体系",
+        "Data labeling": "数据标注",
+        "Model training": "模型训练",
+        "Threshold tuning": "阈值调优",
+        "FP/FN balancing": "误报/漏报平衡",
+        "PM bottleneck": "产品经理的瓶颈",
+        "Could define problems, but couldn't directly shape model behavior.": "能够定义问题，却无法直接塑造模型行为。",
+        "GenAI Safety Sandbox": "生成式 AI 安全沙盒",
+        "Natural-language rules": "自然语言规则",
+        "Roleplay instructions": "角色扮演指令",
+        "LLM-as-a-Referee": "LLM 担任裁判",
+        "PM empowerment": "产品经理的赋能",
+        "Direct control over blocking, edge cases, and reasoning rules.": "可直接控制拦截策略、边界案例与推理规则。",
+        "The Pivot · A Reality Check": "关键转折 · 现实检验",
+        "I initially thought the value was speed of prototyping. But after adversarial testing, I realized the real challenge is production-grade reliability.": "起初我以为价值在于原型的迭代速度。但经过对抗性测试我才意识到，真正的挑战是生产级的可靠性。",
+        "Field note · after the first adversarial test round": "实战记录 · 首轮对抗测试之后",
+        "Non-Deterministic Boundary Shift": "非确定性的边界漂移",
+        "Tweaking a few prompt words can unintentionally alter decision boundaries, boosting recall while spiking false positives.": "微调几个提示词，就可能在无意间改变决策边界——召回率上升的同时，误报也随之飙升。",
+        "Probabilistic Evaluators": "概率性的评估者",
+        "Using LLMs as safety judges means relying on another probabilistic model that requires its own validation layer.": "用 LLM 做安全评审，意味着依赖另一个概率模型，而它同样需要一层自己的验证。",
+        "The Expanding Release Surface": "不断扩张的发布面",
+        "Traditional Risk Release": "传统风控发布",
+        "2 components": "2 个组件",
+        "Model package": "模型包",
+        "Fixed threshold": "固定阈值",
+        "GenAI Risk Release": "生成式 AI 风控发布",
+        "6 components": "6 个组件",
+        "Model version": "模型版本",
+        "System prompt": "系统提示词",
+        "Eval dataset": "评估数据集",
+        "Judge rubrics": "评审评分标准",
+        "Fallback rules": "降级回退规则",
+        "The release surface tripled: every strategy tweak now ships as a versioned set of artifacts that must be tested together.": "发布面扩大到三倍：如今每一次策略调整，都以一组需要共同测试的版本化交付物发布。",
+        "Key takeaway · The trade-off": "核心结论 · 取舍",
+        "Building a risk decision system now takes minutes — proving it won't fail unpredictably takes weeks.": "如今搭建一个风险决策系统只需几分钟，但要证明它不会意外失效，需要数周。",
+        "Key takeaway · The metric": "核心结论 · 度量",
+        "Prompting makes strategy cheap; making it traceable, measurable, and reliable remains hard.": "提示词让策略变得廉价，但让它可追溯、可度量、可靠，依然很难。",
+        "Looking for feedback & further validation": "期待反馈与进一步验证",
+        "I'm continuously refining this sandbox architecture. If you've run into similar prompt-drift or eval reliability challenges, I'd love to exchange insights.": "我仍在持续打磨这套沙盒架构。如果你也遇到过类似的提示词漂移或评估可靠性问题，期待与你交流探讨。",
+        "Leave a comment / Drop a message ↗": "留言 / 私信交流 ↗",
+        "Next iteration": "下一步迭代",
+        "Make the evaluation itself easier to trust.": "让评估本身更可信。",
+        "Clarify label semantics": "厘清标签语义",
+        "Separate topic risk, output-safety verdict, and safety-quality score so that labels cannot appear contradictory.": "区分主题风险、输出安全裁决与安全质量评分，避免标签之间出现矛盾。",
+        "Create comparable records": "建立可比对的记录",
+        "Store model, policy version, timestamp, expected label, actual verdict, repeat count, and FP/FN definitions. Batch execution, live backend traces, judge calibration, and repeated-run consistency.": "存储模型、策略版本、时间戳、期望标签、实际裁决、重复次数，以及误报/漏报定义。批量执行、真实后端链路、评审校准与多次运行一致性。",
+        "Calibrate the judge": "校准评审模型",
+        "Use reference labels, human review, repeated trials, and disagreement analysis before trusting aggregate scores.": "在信任汇总分数之前，先使用基准标签、人工复核、重复试验与分歧分析。",
+        "Extend the workflow": "扩展工作流",
+        "Prototype routing, multi-model comparison, and adversarial loops only after the evidence model is stable.": "仅在证据模型稳定之后，再原型化路由、多模型对比与对抗循环。",
+        "Reflection:": "复盘：",
+        "the useful product move was not adding three tabs. It was separating input risk, defense behavior, and output quality into distinct evaluation responsibilities.": "真正有价值的产品动作不是多加三个标签页，而是把输入风险、防御行为与输出质量拆分为各自独立的评估职责。",
+        "← Home": "← 首页",
+        "Next: Freestyle Challenge →": "下一个：Freestyle Challenge →",
+        "Case 02 · Shipped iOS product": "案例 02 · 已上架 iOS 产品",
+        "A release-management case about turning locally generated music into a product asset chain that could be explained, verified, and reviewed.": "一个发布管理案例：如何把本地生成的音乐，变成可解释、可验证、可审查的产品资产链。",
+        "View on the App Store ↗": "在 App Store 查看 ↗",
+        "Product · Design · Build · Launch": "产品 · 设计 · 开发 · 上架",
+        "AI generative local music": "AI 生成的本地音乐",
+        "PRD · App Store · Rights materials": "PRD · App Store · 版权材料",
+        "Product context": "产品背景",
+        "A short path from random constraint to recorded practice.": "从随机约束到录制练习的短路径。",
+        "Draw": "抽取",
+        "Generate a challenge from style, focus, restriction, duration, and seed.": "根据舞种、主题、限制、时长与随机种子生成挑战。",
+        "Match": "匹配",
+        "Pair it with a suitable BPM, beat, drop, and cue structure.": "匹配合适的 BPM、节拍、Drop 与提示点结构。",
+        "Perform": "练习",
+        "Prepare, record a take, and use cues without leaving the device.": "准备、录制一次练习，提示全程不出设备。",
+        "Export": "导出",
+        "Combine video, audio, and overlay into a shareable result.": "将视频、音频与叠加层合成为可分享的作品。",
+        "Draw a randomized practice constraint": "抽取随机的练习约束",
+        "Review style, BPM, focus, duration, and difficulty": "查看舞种、BPM、主题、时长与难度",
+        "Release risk": "发布风险",
+        "Clean technical logic did not automatically become reviewable evidence.": "干净的技术逻辑不会自动变成可审查的证据。",
+        "The initial choice": "最初的选择",
+        "Avoid dependence on third-party music by using AI-assisted development and purely procedural audio rendered for the app.": "通过 AI 辅助开发与纯程序化音频渲染，避免对第三方音乐的依赖。",
+        "What review exposed": "审查暴露的问题",
+        "A platform still needs explicit provenance and an accountable human declaration. The implementation alone could not communicate ownership.": "平台仍然需要明确的来源追溯与可问责的人工声明。实现本身无法说明版权归属。",
+        "Decision": "决策",
+        "Why the app did not rely on commercial tracks, sample packs, or runtime generation.": "为什么这款应用不依赖商业曲目、采样包或运行时生成。",
+        "Option": "方案",
+        "Experience potential": "体验潜力",
+        "Rights / delivery cost": "版权 / 交付成本",
+        "Commercial music": "商业音乐",
+        "Highly produced": "制作精良",
+        "Licensing, synchronization, and territory complexity": "授权、同步与地域复杂性",
+        "Not suitable for the MVP": "不适合 MVP",
+        "Sample packs / loops": "采样包 / 循环",
+        "Fast to assemble": "拼装速度快",
+        "Per-asset redistribution terms require ongoing review": "每个素材的分发条款需要持续审查",
+        "Not selected": "未采用",
+        "Cloud-generated music": "云端生成音乐",
+        "Potentially varied": "潜在多样性",
+        "Terms, latency, cost, moderation, and QA": "条款、延迟、成本、内容审核与质量保障",
+        "Conflicted with local-first scope": "与本地优先的范围冲突",
+        "Shared safe DSP + track-specific arrangements": "共享安全 DSP + 曲目专属编曲",
+        "Controlled and differentiable": "可控且可差异化",
+        "Lower rights complexity, but still requires clear provenance": "版权复杂度更低，但仍需明确的来源追溯",
+        "Selected": "采用",
+        "Auditable asset pipeline": "可审计的资产管线",
+        "Make every step explainable outside the codebase.": "让每一步在代码库之外也能解释清楚。",
+        "Source": "来源",
+        "Renderer code, configuration, and seed.": "渲染器代码、配置与随机种子。",
+        "Render": "渲染",
+        "Deterministic local generation.": "确定性的本地生成。",
+        "Assets": "资产",
+        "WAV, AAC, and cue sheets.": "WAV、AAC 与提示点表。",
+        "Integrity": "完整性",
+        "Hashes and versioned manifest.": "哈希与带版本的清单。",
+        "Declaration": "声明",
+        "Human-signed rights statement for review.": "供审查使用的人工签署版权声明。",
+        "The release evidence chain: technical provenance supports review, while a human declaration addresses ownership explicitly.": "发布证据链：技术来源追溯支撑审查，人工声明则明确回应版权归属。",
+        "The release story sits on top of a broader product build.": "发布管理的故事建立在更完整的产品构建之上。",
+        "PRD and boundaries": "PRD 与边界",
+        "Define the user flow, non-goals, permissions, failure handling, privacy, and acceptance criteria.": "定义用户流程、非目标、权限、失败处理、隐私与验收标准。",
+        "Challenge system": "挑战系统",
+        "Model style, beat, focus, restriction, duration, difficulty, and reproducible seeds.": "建模舞种、节拍、主题、限制、时长、难度与可复现的种子。",
+        "Recording and export": "录制与导出",
+        "Coordinate camera, audio, cue timing, temporary files, overlays, and fallback behavior.": "协调相机、音频、提示点时机、临时文件、叠加层与降级行为。",
+        "Beat-library iteration": "节拍库迭代",
+        "Move from shared, generic arrangements toward style-specific rhythmic grammar and independent track concepts.": "从共享的通用编曲，走向舞种专属的节奏语法与独立曲目概念。",
+        "Release evidence": "发布证据",
+        "Pair technical QA with an auditable asset history and review-ready declaration.": "把技术测试与可审计的资产历史、可提交审查的声明相结合。",
+        "What can be inspected.": "哪些内容可以查验。",
+        "Shipped product": "已上架产品",
+        "App Store listing and product screens demonstrate the released challenge, recording, and practice experience.": "App Store 页面与产品截图展示了已发布的挑战、录制与练习体验。",
+        "Rights trail": "版权链路",
+        "Renderer/configuration records, formal assets, manifest and hash evidence, and a signed declaration.": "渲染器/配置记录、正式资产、清单与哈希证据，以及签署的声明。",
+        "Two acceptance gates": "两道验收关卡",
+        "Human listening for dance fit and technical checks for duration, loudness, peaks, encoding, and compatibility.": "人工试听舞蹈适配性，加上时长、响度、峰值、编码与兼容性的技术检查。",
+        "packaged beats": "首打包节拍",
+        "dance-style families": "个舞种家族",
+        "acceptance gates": "道验收关卡",
+        "Growth experiment": "增长实验",
+        "Instagram is an acquisition experiment attached to the product.": "Instagram 是附着在产品上的获客实验。",
+        "Content hypothesis": "内容假设",
+        "Dance-style posts, practice mechanics, and product demonstrations can attract dancers with a concrete freestyle-training need.": "舞种内容、练习机制与产品演示，能够吸引有明确即兴训练需求的舞者。",
+        "Measurement path": "度量路径",
+        "Reach → Profile visits → Store taps → Downloads → First challenge → Export or share. Current funnel results are not yet available.": "触达 → 主页访问 → 商店点击 → 下载 → 首次挑战 → 导出或分享。当前漏斗数据尚未可得。",
+        "Reflection and next iteration": "复盘与下一步迭代",
+        "Compliance belongs inside the product-delivery system.": "合规应当内置于产品交付体系之中。",
+        "Asset operations": "资产运营",
+        "Standardize versioning, hashes, cue sheets, declarations, and review attachments from the first asset.": "从第一个资产开始，统一版本、哈希、提示点表、声明与审查附件。",
+        "Music QA": "音乐质量保障",
+        "Add structured listening notes, low-frequency budgets, section-coverage checks, and candidate-similarity warnings.": "增加结构化试听记录、低频预算、段落覆盖检查与候选相似度提醒。",
+        "Growth evidence": "增长证据",
+        "Use campaign attribution and a first-challenge-completed event before drawing conclusions about acquisition quality.": "先落地活动归因与“首次挑战完成”事件，再对获客质量下结论。",
+        "Core learning:": "核心收获：",
+        "a product can be technically independent from third-party rights and still fail to communicate that clearly. Release management needs evidence that people outside the codebase can inspect.": "一款产品可以在技术上独立于第三方版权，却依然无法把这一点讲清楚。发布管理需要代码库之外的人也能查验的证据。",
+        "← Safety Sandbox": "← 内容安全沙盒",
+        "Next: DanceLog →": "下一个：DanceLog →",
+        "Case 03 · Shipped iOS product": "案例 03 · 已上架 iOS 产品",
+        "From “the day can be lit” to “the interaction feels trustworthy”: evolving a one-tap dance log after real device use exposed conflicts between tapping, dragging, motion, and feedback.": "从“点亮这一天”到“交互值得信任”：在真机使用暴露点击、拖拽、动效与反馈的冲突之后，一款一键舞蹈记录应用的演进。",
+        "Product · Design · Build": "产品 · 设计 · 开发",
+        "fully local": "完全本地化",
+        "App Store · Tests · Device UAT": "App Store · 测试 · 真机 UAT",
+        "The 1.0 product bet": "1.0 版本的产品赌注",
+        "Make the core behavior small enough to complete.": "把核心行为做得足够小、足够可完成。",
+        "Open": "打开",
+        "Start on the Log tab with the current day in focus.": "打开即进入记录页，焦点停在今天。",
+        "Light": "点亮",
+        "Use one tap to record that dancing happened.": "一次点击，记录今天跳过舞。",
+        "Enrich": "补充",
+        "Optionally add styles, session type, duration, and difficulty.": "可选补充舞种、练习类型、时长与难度。",
+        "Review": "回顾",
+        "Use monthly views to reflect on practice rhythm and mix.": "通过月度视图回顾练习节奏与构成。",
+        "Versioned local JSON": "带版本的本地 JSON",
+        "No account, cloud, or tracking": "无账号、无云端、无追踪",
+        "Observed friction": "观察到的摩擦",
+        "Four visible problems pointed to one structural mismatch.": "四个显性问题指向同一个结构性错配。",
+        "Visual trust": "视觉信任",
+        "The main control’s shadow looked like a second, misaligned rectangle.": "主控件的阴影看起来像第二个错位的矩形。",
+        "Gesture trust": "手势信任",
+        "A long-press drag could still trigger the button action on release.": "长按拖拽松手时仍可能触发按钮动作。",
+        "Spatial continuity": "空间连续性",
+        "A three-card carousel exposed gaps and ghosting during faster movement.": "三卡轮播在较快滑动时暴露空隙与残影。",
+        "Feedback coherence": "反馈一致性",
+        "Sound, haptics, animation, and state changes did not yet form one system.": "声音、触感、动画与状态变化尚未形成统一体系。",
+        "Root cause:": "根本原因：",
+        "the first version treated a static three-card layout as a continuous interaction control. Parameter tuning could reduce symptoms, but it could not resolve the model conflict.": "第一版把静态三卡布局当作连续交互控件使用。参数调优可以减轻症状，但无法解决模型层面的冲突。",
+        "Product decisions": "产品决策",
+        "Let the visual hierarchy change with the user’s task.": "让视觉层级跟随用户任务而变化。",
+        "State": "状态",
+        "Card treatment": "卡片表现",
+        "Interaction rule": "交互规则",
+        "User value": "用户价值",
+        "Idle": "静止",
+        "Focused day is large": "焦点日期放大",
+        "Tap-to-light is enabled": "允许点击点亮",
+        "Preserves the primary action": "保住核心操作",
+        "Dragging": "拖拽中",
+        "All days become compact": "所有日期收起",
+        "Button action is suppressed": "抑制按钮动作",
+        "Prevents reflow and accidental logging": "避免重排与误记录",
+        "Momentum": "惯性滑动",
+        "All days stay compact": "所有日期保持收起",
+        "Move 1–5 days step by step": "以 1–5 天为单位步进",
+        "Supports speed without losing orientation": "兼顾速度与方向感",
+        "Settling": "回弹稳定",
+        "Focused day expands again": "焦点日期重新放大",
+        "Unlock after spring settling": "弹簧动画结束后解锁",
+        "Returns to a stable logging state": "回到稳定的记录状态",
+        "Move from visible fixes to one coherent interaction model.": "从逐项修复，走向统一的交互模型。",
+        "Visual structure": "视觉结构",
+        "Replace an out-of-bounds shadow with a real depth layer.": "用真实的景深层替代越界的阴影。",
+        "Gesture correctness": "手势正确性",
+        "Track dragging and momentum explicitly.": "显式跟踪拖拽与惯性状态。",
+        "Continuity": "连续性",
+        "Render a ±7-day buffer around the focus.": "在焦点周围渲染 ±7 天的缓冲。",
+        "Stable layout": "稳定布局",
+        "Keep cards compact while moving.": "移动过程中保持卡片收起。",
+        "Feedback system": "反馈体系",
+        "Align sound, haptics, and animation with real state changes.": "让声音、触感与动画对齐真实的状态变化。",
+        "Before / after": "改版前后",
+        "Explain engineering changes through user value.": "用用户价值解释工程改动。",
+        "Unlogged state · the central one-tap action": "未记录状态 · 中央一键操作",
+        "Logged state · optional session details": "已记录状态 · 可选的练习详情",
+        "Monthly review · rhythm, volume, and style mix": "月度回顾 · 节奏、数量与舞种构成",
+        "Dimension": "维度",
+        "Date buffer": "日期缓冲",
+        "Previous / current / next": "前一天 / 今天 / 后一天",
+        "±7 days around focus": "焦点周围 ±7 天",
+        "Fast movement no longer exposes gaps": "快速滑动不再露出空隙",
+        "Single gesture": "单次手势",
+        "Usually one day": "通常一天",
+        "Momentum across 1–5 days": "惯性跨越 1–5 天",
+        "Historical browsing becomes faster": "翻看历史更快",
+        "Tap / drag relationship": "点击 / 拖拽关系",
+        "Callbacks could compete": "回调可能相互竞争",
+        "Explicit drag and momentum suppression": "显式的拖拽与惯性抑制",
+        "Browsing cannot accidentally create a record": "浏览不会误创建记录",
+        "Motion layout": "动效布局",
+        "Large card moves between days": "大卡片在日期间移动",
+        "Compact while moving, large when settled": "移动时收起，稳定后放大",
+        "Removes overlap and ghosting": "消除重叠与残影",
+        "Feedback": "反馈",
+        "Basic color and haptic change": "基础的颜色与触感变化",
+        "Original tick sound, haptics, and state-led motion": "原创滴答声、触感与状态驱动的动效",
+        "Makes a date change and a completed log feel distinct": "让切换日期与完成记录的感受不同",
+        "Verification": "验证",
+        "Turn subjective experience into regressions that can be tested.": "把主观体验转化为可测试的回归用例。",
+        "Representative UI tests": "代表性 UI 测试",
+        "A normal tap still lights the selected day.": "普通点击仍能点亮所选日期。",
+        "A long-press drag changes date without lighting the pressed day.": "长按拖拽只切换日期，不点亮按压的日期。",
+        "A fast swipe can cross multiple days and settle.": "快速滑动可跨越多天并稳定落定。",
+        "Current-month navigation state is visually and functionally consistent.": "当月导航状态在视觉与功能上保持一致。",
+        "Why device UAT still matters": "为什么真机 UAT 仍然重要",
+        "Gesture friction and movement speed": "手势摩擦与移动速度",
+        "Sound and haptic timing": "声音与触感时机",
+        "Reduce Motion behavior": "“减弱动态效果”的行为",
+        "Different physical screen sizes": "不同物理屏幕尺寸",
+        "Correctness comes before decorative polish.": "正确性先于装饰性打磨。",
+        "Momentum usability": "惯性可用性",
+        "Observe whether people frequently overshoot before changing the 1–5-day model.": "先观察用户是否经常滑过头，再调整 1–5 天模型。",
+        "Accessibility": "无障碍",
+        "Run dedicated VoiceOver, Dynamic Type, contrast, and Reduce Motion checks.": "进行专门的 VoiceOver、动态字体、对比度与减弱动态效果检查。",
+        "Data and privacy": "数据与隐私",
+        "If analytics are introduced, revisit the local-first promise and App Privacy before implementation.": "如果引入数据分析，先重新审视本地优先承诺与 App 隐私说明。",
+        "accidental logging is a correctness problem, not a small UI defect. Structural interaction problems need a structural solution—not another threshold adjustment.": "误记录是正确性问题，不是小的 UI 缺陷。结构性的交互问题需要结构性的解决方案——而不是再调一次阈值。",
+        "Back home": "返回首页",
+        "Product framing · AI systems · Hands-on delivery": "产品定义 · AI 系统 · 亲手交付",
+        "Batch evaluation": "数据批跑",
+        "One batch run turns 55 cases into a model-by-model scorecard.": "一次批跑，把 55 条用例变成逐模型的记分卡。",
+        "Batch run · five-step pipeline with headline metrics": "批跑 · 五步流水线与核心指标",
+        "Batch run · per-case verdicts with one-click false-positive flagging": "批跑 · 逐用例判定与一键误杀标记",
+        "Four models, same benchmark": "四款模型，同一基准",
+        "Metric": "指标",
+        "Block rate": "拦截率",
+        "False positive rate": "误杀率",
+        "Average safety score": "平均安全得分",
+        "Average latency": "平均响应时延",
+        "Key takeaway · The latency pick": "关键结论 · 低时延之选",
+        "Model A holds an 85% block rate with zero false positives at 1416 ms — roughly 40% faster than B and C — the default choice for real-time guardrails.": "Model A 在 1416 ms 下保持 85% 拦截率与 0% 误杀——比 B 和 C 快约 40%——是实时 Guardrail 的默认选择。",
+        "Key takeaway · The strictness pick": "关键结论 · 高严格之选",
+        "B and C trade speed for slightly tighter blocking (88% / 85% at about 2.2 s), a fit for compliance-heavy review; D's 8.8 s latency reserves it for offline screening.": "B 与 C 用速度换更严的拦截（88% / 85%，约 2.2 s），适合强合规审查；D 的 8.8 s 时延则更适合离线筛查。",
+        "Cost boundary:": "成本边界：",
+        "boundary positives reach the LLM judge only when the target model refuses — lazy arbitration keeps judge tokens proportional to refusals, not to traffic.": "只有被测模型触发拒答时，边界正样本才会进入 LLM 裁判——按需延迟裁决让裁判 Token 与拒答量成正比，而非与流量成正比。",
+        "Intelligent analysis": "智能分析",
+        "Failures stop being a red badge — they become root causes and patches.": "失败不再只是一枚红色徽标——而是可修复的根因与补丁。",
+        "Intelligent analysis · semantic attack clustering and generated mitigation fixes": "智能分析 · 语义攻击聚类与生成的缓解补丁",
+        "Read the failure, not just the badge": "读失败本身，而不只是徽标",
+        "A bare “Failed” state hides the root cause. The analysis agent parses run logs and clusters misses by semantic vector instead of test ID, so the fence's real weak spots surface first.": "“Failed” 一个字遮住了根因。分析 Agent 解析运行日志，按语义向量而非用例 ID 聚类失效样本，让防线真正的薄弱处先浮出来。",
+        "DAN Role-Play": "DAN 角色扮演",
+        "PII & Privacy Extraction": "PII 与隐私提取",
+        "Prefix Override": "前缀覆盖",
+        "Hypothetical Scenario": "假设场景",
+        "Multilingual Confusion": "多语言混淆",
+        "Close the loop: patches in, experts in": "闭环：补丁进防线，专家进回路",
+        "Generated mitigation fixes": "生成的缓解补丁",
+        "The advisor turns each cluster into a layered patch — regex pre-filters, system-prompt overrides, and output-classifier thresholds — plus a weekly adversarial re-test cadence.": "Advisor 把每个聚类变成分层补丁——正则预过滤、System Prompt 覆盖、输出分类器阈值——并配以每周一次的对抗复测。",
+        "Human-in-the-loop flywheel": "人在回路飞轮",
+        "One-click expert review on any flagged case; confirmed corrections are formatted into the golden dataset that anchors future fine-tuning and alignment.": "任何被标记的用例都可一键进入专家复核；确认后的修正会被格式化进黄金数据集，作为后续微调与对齐的锚点。",
+        "Key takeaway · Constraint beats autonomy": "关键结论 · 约束胜过自主",
+        "Dynamic planners and live red/blue agent debates were cut on purpose: evaluation runs on a deterministic five-step pipeline, and analysis happens after the run, where every step stays traceable.": "动态规划 Agent 与实时红蓝对抗是有意砍掉的：评测跑在确定性五步流水线上，分析发生在运行之后——每一步都可追溯。",
+        "Key takeaway · The 85% lesson": "关键结论 · 85% 的教训",
+        "A high block rate looked great until the misses were read — DAN role-play and PII extraction made up 36% of failures, and chasing the rate had begun to over-block normal requests.": "85% 的拦截率一度很好看，直到读失败明细——DAN 角色扮演与 PII 提取占了失效案例的 36%，而追逐拦截率已开始误伤正常请求。"
+      };
+
+      let siteLang = 'en';
+      try { if (localStorage.getItem('site-lang') === 'zh') siteLang = 'zh'; } catch (e) {}
+
+      const langButtons = document.querySelectorAll('[data-lang-btn]');
+
+      function translateText(target) {
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+        const nodes = [];
+        while (walker.nextNode()) nodes.push(walker.currentNode);
+        for (const node of nodes) {
+          const parent = node.parentElement;
+          if (!parent || parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE') continue;
+          const raw = node.nodeValue;
+          const key = raw.trim();
+          if (!key) continue;
+          if (target === 'zh') {
+            const zh = I18N[key];
+            if (zh && !node._siteEn) { node._siteEn = raw; node.nodeValue = raw.replace(key, zh); }
+          } else if (node._siteEn) {
+            node.nodeValue = node._siteEn;
+            node._siteEn = null;
+          }
+        }
+      }
+
+      function applyStoreLocale() {
+        document.querySelectorAll('a[href*="apps.apple.com"]').forEach((a) => {
+          a.href = a.href.replace(/(apps\.apple\.com\/)[a-z]{2}\//, `$1${siteLang === 'zh' ? 'cn' : 'us'}/`);
+        });
+      }
+
+      function setSiteLang(lang, { save = true } = {}) {
+        siteLang = lang;
+        document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+        langButtons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.langBtn === lang)));
+        translateText(lang);
+        applyStoreLocale();
+        renderPage({ scroll: false });
+        if (save) { try { localStorage.setItem('site-lang', lang); } catch (e) {} }
+      }
+
+      langButtons.forEach((button) => button.addEventListener('click', () => {
+        if (button.dataset.langBtn !== siteLang) setSiteLang(button.dataset.langBtn);
+      }));
+
+      setSiteLang(siteLang, { save: false });
+
+      window.addEventListener('hashchange', () => renderPage());
+      renderPage({ scroll: false });
+    })();
+  </script>
+</body>
+</html>
