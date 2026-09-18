@@ -86,6 +86,20 @@
     }
     .nav-link:hover { color: var(--ink); border-color: var(--line); }
     .nav-link[aria-current="page"] { background: var(--ink); color: var(--white); border-color: var(--ink); }
+    .nav-social {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      margin-left: 2px;
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      color: var(--muted);
+      text-decoration: none;
+    }
+    .nav-social:hover { color: var(--white); background: #0a66c2; border-color: #0a66c2; }
+    .nav-social svg { display: block; }
     .nav-type {
       display: inline-flex;
       align-items: center;
@@ -118,6 +132,7 @@
       .menu-toggle { display: inline-flex; border: 1px solid var(--ink); border-radius: 2px; padding: 8px 12px; background: transparent; cursor: pointer; }
       .header-lang { display: none; }
       .nav-lang { display: inline-flex; align-self: flex-start; margin: 4px 6px 12px; }
+      .nav-social { align-self: flex-start; margin: 0 6px 4px; }
     }
 
     .page { display: none; }
@@ -244,25 +259,6 @@
       white-space: nowrap;
     }
 
-    .proof-bar {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      margin-top: 30px;
-      padding-top: 22px;
-      border-top: 1px solid var(--line);
-    }
-    .proof-item { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding-right: 18px; }
-    .proof-item + .proof-item { border-left: 1px solid var(--line); padding-left: 22px; padding-right: 0; }
-    .proof-num {
-      font-size: clamp(1.9rem, 3vw, 2.5rem);
-      line-height: 1;
-      font-weight: 800;
-      letter-spacing: -.03em;
-      color: var(--ink);
-    }
-    .proof-num-wide { font-size: clamp(1.05rem, 1.55vw, 1.45rem); letter-spacing: -.01em; padding-top: 4px; }
-    .proof-label { color: var(--muted); font-size: .8rem; line-height: 1.4; }
-
     /* ---- Hero visual preview (layered product mockups) ---- */
     .hero-visual { position: relative; margin: 0; padding: 6px 0 30px; }
     .visual-swatch {
@@ -342,7 +338,6 @@
       0%, 100% { box-shadow: 0 0 0 0 rgba(23, 107, 77, .35); }
       50% { box-shadow: 0 0 0 6px rgba(23, 107, 77, 0); }
     }
-    html[lang="zh-CN"] .proof-num, html[lang="zh-CN"] .proof-num-wide { letter-spacing: 0; }
 
     .grid-2, .grid-3, .grid-4 { display: grid; gap: 18px; }
     .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -723,8 +718,6 @@
       .win-phone { width: 42%; left: -8px; bottom: -2px; }
       .visual-swatch { display: none; }
       .float-chip { top: -2px; right: 0; }
-      .proof-item { padding-right: 12px; }
-      .proof-item + .proof-item { padding-left: 16px; }
     }
     @media (max-width: 430px) {
       .facts { grid-template-columns: 1fr; }
@@ -774,6 +767,9 @@
           </div>
         </div>
       </div>
+      <a class="nav-social" href="https://www.linkedin.com/in/shikezhang/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn profile">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="currentColor"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28ZM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12ZM7.12 20.45H3.56V9h3.56v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.72v20.55C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.72C24 .77 23.2 0 22.22 0Z"/></svg>
+      </a>
     </nav>
     <div class="lang-switch header-lang" role="group" aria-label="Language / 语言">
       <button type="button" data-lang-btn="en" aria-pressed="true">EN</button>
@@ -800,11 +796,6 @@
                 <a class="button primary" href="#featured" data-scroll-to="featured"><span>Explore Featured Project</span><span class="btn-arrow" aria-hidden="true">↓</span></a>
                 <a class="button" href="https://www.linkedin.com/in/shikezhang/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
               </div>
-              <div class="proof-bar">
-                <div class="proof-item"><strong class="proof-num">1</strong><span class="proof-label">AI Risk &amp; Eval Sandbox</span></div>
-                <div class="proof-item"><strong class="proof-num">2</strong><span class="proof-label">Live iOS Apps Shipped</span></div>
-                <div class="proof-item"><strong class="proof-num proof-num-wide">End-to-End</strong><span class="proof-label">Design, Code &amp; Deploy</span></div>
-              </div>
             </div>
             <div class="hero-visual">
               <div class="visual-swatch" aria-hidden="true"></div>
@@ -818,23 +809,6 @@
               </div>
               <div class="float-chip"><i class="chip-dot" aria-hidden="true"></i><span>Live prototype</span></div>
             </div>
-          </div>
-        </section>
-
-        <section class="section" id="featured">
-          <p class="eyebrow">Featured case · AI evaluation system</p>
-          <div class="card featured-card">
-            <div class="tags"><span class="tag strong">Prototype</span><span class="tag">Synthetic cases</span><span class="tag">AI evaluation</span><span class="tag">Guardrails</span></div>
-            <h2 class="card-title">Content Safety Sandbox</h2>
-            <p class="card-copy">A three-layer approach to exploring model safety: screen risky inputs, test guardrails under adversarial pressure, and evaluate the final output with an explicit rubric.</p>
-            <div class="flow">
-              <div class="flow-node"><span>Flow 1</span><h3>Input screening</h3><p>Can a rule or classifier identify a malicious prompt?</p></div>
-              <div class="flow-node"><span>Flow 2</span><h3>Red-blue testing</h3><p>Can a guardrail hold up against disguised or multi-step attacks?</p></div>
-              <div class="flow-node"><span>Flow 3</span><h3>Output evaluation</h3><p>How should a judge assess the safety and usefulness of the answer?</p></div>
-            </div>
-            <div class="callout"><strong>Evidence boundary:</strong> this case includes a Coze prototype, designed test suites, and screenshots of individual run states. It is not presented as a production financial-risk system.</div>
-            <img class="media-wide" src="assets/sandbox-flow-2.png" alt="Content Safety Sandbox Flow 2 interface showing red attack, blue shield, verdict, and report nodes" loading="lazy">
-            <div class="actions"><button class="button primary" type="button" data-go="sandbox">Explore the case</button><a class="button" href="https://safetysandbox.coze.site" target="_blank" rel="noopener noreferrer">Try Now ↗</a></div>
           </div>
         </section>
 
@@ -901,6 +875,23 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+        </section>
+
+        <section class="section" id="featured">
+          <p class="eyebrow">Featured case · AI evaluation system</p>
+          <div class="card featured-card">
+            <div class="tags"><span class="tag strong">Prototype</span><span class="tag">Synthetic cases</span><span class="tag">AI evaluation</span><span class="tag">Guardrails</span></div>
+            <h2 class="card-title">Content Safety Sandbox</h2>
+            <p class="card-copy">A three-layer approach to exploring model safety: screen risky inputs, test guardrails under adversarial pressure, and evaluate the final output with an explicit rubric.</p>
+            <div class="flow">
+              <div class="flow-node"><span>Flow 1</span><h3>Input screening</h3><p>Can a rule or classifier identify a malicious prompt?</p></div>
+              <div class="flow-node"><span>Flow 2</span><h3>Red-blue testing</h3><p>Can a guardrail hold up against disguised or multi-step attacks?</p></div>
+              <div class="flow-node"><span>Flow 3</span><h3>Output evaluation</h3><p>How should a judge assess the safety and usefulness of the answer?</p></div>
+            </div>
+            <div class="callout"><strong>Evidence boundary:</strong> this case includes a Coze prototype, designed test suites, and screenshots of individual run states. It is not presented as a production financial-risk system.</div>
+            <img class="media-wide" src="assets/sandbox-flow-2.png" alt="Content Safety Sandbox Flow 2 interface showing red attack, blue shield, verdict, and report nodes" loading="lazy">
+            <div class="actions"><button class="button primary" type="button" data-go="sandbox">Explore the case</button><a class="button" href="https://safetysandbox.coze.site" target="_blank" rel="noopener noreferrer">Try Now ↗</a></div>
           </div>
         </section>
 
@@ -1595,9 +1586,6 @@
         "I design, build, and ship full-stack AI tools & mobile apps.": "我设计、开发并交付全栈 AI 工具与移动应用。",
         "A hands-on portfolio showcasing end-to-end execution: from GenAI evaluation sandboxes to live iOS applications with real users.": "一份实操性项目组合，全面展示端到端执行流程：从生成式人工智能评估沙箱到面向真实用户的上线 iOS 应用。",
         "Explore Featured Project": "探索精选项目",
-        "AI Risk & Eval Sandbox": "AI 风险与评估沙盒",
-        "Live iOS Apps Shipped": "已上线的 iOS 应用",
-        "End-to-End": "全流程",
         "Design, Code & Deploy": "设计 · 编码 · 部署",
         "LLM Evaluation": "大语言模型评估",
         "[Web]": "[网页版]",
