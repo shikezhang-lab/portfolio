@@ -443,6 +443,22 @@
     .status-badge.published { background: #eaf3de; color: #27500a; border-color: #97c459; }
     .status-badge.in-dev { background: #faeeda; color: #633806; border-color: #ef9f27; }
     .status-badge.demo { background: #e6f1fb; color: #0c447c; border-color: #85b7eb; }
+    .nav-dropdown { position: relative; }
+    .nav-dropdown-trigger .caret { font-size: .7em; margin-left: 2px; opacity: .8; }
+    .nav-dropdown-menu { position: absolute; top: calc(100% + 8px); left: 0; min-width: 250px; background: var(--white); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(7,30,61,.14); padding: 10px; opacity: 0; visibility: hidden; transform: translateY(-6px); transition: opacity .16s ease, transform .16s ease, visibility .16s; z-index: 40; }
+    .nav-dropdown-menu .dropdown-group + .dropdown-group { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+    .dropdown-group-label { margin: 4px 8px 6px; font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+    .dropdown-item { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 8px 10px; border-radius: 6px; font: inherit; font-size: .9rem; color: var(--ink); cursor: pointer; }
+    .dropdown-item:hover, .dropdown-item:focus-visible { background: var(--paper-2); outline: none; }
+    .dropdown-item.featured { color: var(--accent); font-weight: 800; }
+    @media (hover: hover) and (pointer: fine) {
+      .nav-dropdown:hover .nav-dropdown-menu,
+      .nav-dropdown:focus-within .nav-dropdown-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+    }
+    @media (max-width: 720px) {
+      .nav-dropdown-menu { position: static; opacity: 1; visibility: visible; transform: none; box-shadow: none; border: 0; border-radius: 0; padding: 0 0 0 12px; min-width: 0; }
+      .nav-dropdown-menu .dropdown-group + .dropdown-group { border-top: 0; }
+    }
     .evidence-band {
       display: grid;
       grid-template-columns: 1.2fr .8fr;
@@ -737,9 +753,27 @@
         <button type="button" data-lang-btn="zh" aria-pressed="false">中文</button>
       </div>
       <button class="nav-link" type="button" data-go="home" aria-current="page">Home</button>
-      <button class="nav-link" type="button" data-scroll-to="published">Published</button>
-      <button class="nav-link" type="button" data-scroll-to="in-dev">In development</button>
-      <button class="nav-link" type="button" data-scroll-to="demo">Demo</button>
+      <div class="nav-dropdown">
+        <button class="nav-link nav-dropdown-trigger" type="button" aria-haspopup="true" aria-expanded="false">Product <span class="caret" aria-hidden="true">▾</span></button>
+        <div class="nav-dropdown-menu" role="menu">
+          <div class="dropdown-group">
+            <p class="dropdown-group-label">Demo</p>
+            <button class="dropdown-item featured" type="button" data-go="sandbox" role="menuitem">Safety Sandbox ★</button>
+            <button class="dropdown-item" type="button" data-go="video-sandbox" role="menuitem">Video Creation Sandbox</button>
+            <button class="dropdown-item" type="button" data-go="martech-sandbox" role="menuitem">MarTech Sandbox</button>
+          </div>
+          <div class="dropdown-group">
+            <p class="dropdown-group-label">Published</p>
+            <button class="dropdown-item" type="button" data-go="freestyle" role="menuitem">Freestyle Challenge</button>
+            <button class="dropdown-item" type="button" data-go="dancelog" role="menuitem">DanceLog</button>
+          </div>
+          <div class="dropdown-group">
+            <p class="dropdown-group-label">In development</p>
+            <button class="dropdown-item" type="button" data-go="novelstudio" role="menuitem">NovelStudio</button>
+            <button class="dropdown-item" type="button" data-go="sitepilot" role="menuitem">SitePilot</button>
+          </div>
+        </div>
+      </div>
     </nav>
     <div class="lang-switch header-lang" role="group" aria-label="Language / 语言">
       <button type="button" data-lang-btn="en" aria-pressed="true">EN</button>
@@ -806,13 +840,35 @@
 
         <section class="section" id="portfolio">
           <p class="eyebrow">Project portfolio</p>
-          <h2>Seven projects, three delivery states.</h2>
+          <h2>Project Status Dashboard</h2>
           <div class="table-scroll">
             <table class="comparison portfolio-table">
               <thead>
                 <tr><th>Project</th><th>Type</th><th>Status</th><th>Summary</th><th></th></tr>
               </thead>
               <tbody>
+                <tr class="group" id="demo"><td colspan="5">Demo</td></tr>
+                <tr>
+                  <td><strong>Safety Sandbox ★</strong></td>
+                  <td><span class="tag">Web</span></td>
+                  <td><span class="status-badge demo">Demo</span></td>
+                  <td class="summary">A three-paradigm LLM content-safety evaluation workbench.</td>
+                  <td class="row-actions"><a class="button small" href="https://safetysandbox.coze.site" target="_blank" rel="noopener noreferrer">Try demo</a><button class="button small" type="button" data-go="sandbox">View case</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Video Creation Sandbox</strong></td>
+                  <td><span class="tag">Web</span></td>
+                  <td><span class="status-badge demo">Demo</span></td>
+                  <td class="summary">An internal demo exploring AI-assisted video creation.</td>
+                  <td class="row-actions"><button class="button small" type="button" data-go="video-sandbox">View case</button></td>
+                </tr>
+                <tr>
+                  <td><strong>MarTech Sandbox</strong></td>
+                  <td><span class="tag">Web</span></td>
+                  <td><span class="status-badge demo">Demo</span></td>
+                  <td class="summary">An internal demo of a marketing-technology middle platform.</td>
+                  <td class="row-actions"><button class="button small" type="button" data-go="martech-sandbox">View case</button></td>
+                </tr>
                 <tr class="group" id="published"><td colspan="5">Published</td></tr>
                 <tr>
                   <td><strong>Freestyle Challenge</strong></td>
@@ -842,28 +898,6 @@
                   <td><span class="status-badge in-dev">In development</span></td>
                   <td class="summary">An iOS copilot for field and on-site service workflows.</td>
                   <td class="row-actions"><button class="button small" type="button" data-go="sitepilot">View case</button></td>
-                </tr>
-                <tr class="group" id="demo"><td colspan="5">Demo</td></tr>
-                <tr>
-                  <td><strong>Safety Sandbox</strong></td>
-                  <td><span class="tag">Web</span></td>
-                  <td><span class="status-badge demo">Demo</span></td>
-                  <td class="summary">A three-paradigm LLM content-safety evaluation workbench.</td>
-                  <td class="row-actions"><a class="button small" href="https://safetysandbox.coze.site" target="_blank" rel="noopener noreferrer">Try demo</a><button class="button small" type="button" data-go="sandbox">View case</button></td>
-                </tr>
-                <tr>
-                  <td><strong>Video Creation Sandbox</strong></td>
-                  <td><span class="tag">Web</span></td>
-                  <td><span class="status-badge demo">Demo</span></td>
-                  <td class="summary">An internal demo exploring AI-assisted video creation.</td>
-                  <td class="row-actions"><button class="button small" type="button" data-go="video-sandbox">View case</button></td>
-                </tr>
-                <tr>
-                  <td><strong>MarTech Sandbox</strong></td>
-                  <td><span class="tag">Web</span></td>
-                  <td><span class="status-badge demo">Demo</span></td>
-                  <td class="summary">An internal demo of a marketing-technology middle platform.</td>
-                  <td class="row-actions"><button class="button small" type="button" data-go="martech-sandbox">View case</button></td>
                 </tr>
               </tbody>
             </table>
@@ -1530,6 +1564,7 @@
         }
         if (onTarget) renderPage();
         else location.hash = `/${page}`;
+        trigger.blur();
       });
 
       // Primary hero CTA: smooth-scroll to the Featured Case section on Home.
@@ -2005,7 +2040,7 @@
         "Switched to real LLM calls, a fully English UI, and SSE streaming. English targets a global AI-safety audience and performs more stably on safety tasks; SSE fits the strictly one-way server→client stream natively over HTTP with simple deployment, whereas WebSocket's bidirectional capability was unused.": "切换到真实 LLM 调用、全英文 UI 与 SSE 流式。英文面向全球 AI 安全研究者，且在安全类任务上表现更稳；SSE 贴合严格单向的 server→client 流，原生基于 HTTP、部署简单，而 WebSocket 的双向能力并未用上。",
         "Tech stack": "技术栈",
         "Project portfolio": "项目组合",
-        "Seven projects, three delivery states.": "七个项目，三种交付状态。",
+        "Project Status Dashboard": "个人项目状态管理看板",
         "Project": "项目",
         "Type": "类型",
         "Summary": "概要",
@@ -2028,7 +2063,9 @@
         "An internal demo exploring AI-assisted video creation.": "探索 AI 辅助视频创作的内部演示。",
         "An internal demo of a marketing-technology middle platform.": "营销技术中台的内部演示。",
         "Case · In development · iOS": "案例 · 开发中 · iOS",
-        "Case · Internal demo · Web": "案例 · 内部演示 · Web"
+        "Case · Internal demo · Web": "案例 · 内部演示 · Web",
+        "Product": "作品",
+        "Safety Sandbox ★": "安全沙盒 ★"
       };
 
       let siteLang = 'en';
