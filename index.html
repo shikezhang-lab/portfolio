@@ -429,6 +429,20 @@
     .comparison th { color: var(--muted); font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; }
     .comparison td { background: rgba(237, 243, 248, .42); }
     .decision { color: var(--success); font-weight: 850; }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .portfolio-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    .portfolio-table th, .portfolio-table td { padding: 15px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+    .portfolio-table thead th { color: var(--muted); font-size: .74rem; letter-spacing: .1em; text-transform: uppercase; }
+    .portfolio-table tbody td { background: rgba(237, 243, 248, .42); }
+    .portfolio-table .group td { background: var(--paper-2); color: var(--ink); font-weight: 800; text-transform: uppercase; letter-spacing: .1em; font-size: .8rem; scroll-margin-top: 84px; }
+    .portfolio-table tbody tr:not(.group) td:first-child { font-weight: 800; white-space: nowrap; }
+    .portfolio-table .summary { color: var(--muted); min-width: 240px; }
+    .portfolio-table .row-actions { display: flex; flex-wrap: wrap; gap: 8px; white-space: nowrap; }
+    .portfolio-table .tag { margin: 0; }
+    .status-badge { display: inline-flex; align-items: center; min-height: 26px; padding: 3px 11px; border-radius: 999px; font-size: .72rem; font-weight: 800; letter-spacing: .03em; white-space: nowrap; border: 1px solid transparent; }
+    .status-badge.published { background: #eaf3de; color: #27500a; border-color: #97c459; }
+    .status-badge.in-dev { background: #faeeda; color: #633806; border-color: #ef9f27; }
+    .status-badge.demo { background: #e6f1fb; color: #0c447c; border-color: #85b7eb; }
     .evidence-band {
       display: grid;
       grid-template-columns: 1.2fr .8fr;
@@ -723,9 +737,9 @@
         <button type="button" data-lang-btn="zh" aria-pressed="false">中文</button>
       </div>
       <button class="nav-link" type="button" data-go="home" aria-current="page">Home</button>
-      <button class="nav-link" type="button" data-go="sandbox"><span class="nav-name">Safety Sandbox</span> <span class="nav-type">[Web]</span></button>
-      <button class="nav-link" type="button" data-go="freestyle"><span class="nav-name">Freestyle</span> <span class="nav-type">[iOS]</span></button>
-      <button class="nav-link" type="button" data-go="dancelog"><span class="nav-name">DanceLog</span> <span class="nav-type">[iOS]</span></button>
+      <button class="nav-link" type="button" data-scroll-to="published">Published</button>
+      <button class="nav-link" type="button" data-scroll-to="in-dev">In development</button>
+      <button class="nav-link" type="button" data-scroll-to="demo">Demo</button>
     </nav>
     <div class="lang-switch header-lang" role="group" aria-label="Language / 语言">
       <button type="button" data-lang-btn="en" aria-pressed="true">EN</button>
@@ -790,30 +804,69 @@
           </div>
         </section>
 
-        <section class="section">
-          <p class="eyebrow">Shipped products</p>
-          <h2 class="title-single-line">Two products, two different kinds of product work.</h2>
-          <div class="grid-2">
-            <div class="card case-card">
-              <div>
-                <img class="case-thumb" src="assets/freestyle-home-card.png" alt="Freestyle Dance Challenge App Store visual showing challenge cards and app screens" loading="lazy">
-                <div class="number">02</div>
-                <div class="tags"><span class="tag strong">Shipped</span><span class="tag">iOS</span><a class="tag external" href="https://www.instagram.com/freestyledancechallengeapp/" target="_blank" rel="noopener noreferrer">Instagram</a></div>
-                <h3 class="card-title">Freestyle Challenge</h3>
-                <p>How a music-rights review changed release management from a final submission task into an auditable product and asset workflow.</p>
-              </div>
-              <div class="actions"><button class="button small" type="button" data-go="freestyle">View case</button><a class="button small" href="https://apps.apple.com/us/app/freestyle-dance-challenge/id6796975099" target="_blank" rel="noopener noreferrer">App Store ↗</a></div>
-            </div>
-            <div class="card case-card">
-              <div>
-                <img class="case-thumb" src="assets/dancelog-home-card.png" alt="DanceLog App Store visual showing monthly stats, settings, daily log, and recorded sets" loading="lazy">
-                <div class="number">03</div>
-                <div class="tags"><span class="tag strong">Shipped</span><span class="tag">iOS</span><span class="tag">Local-first</span></div>
-                <h3 class="card-title">DanceLog</h3>
-                <p>How a simple one-tap logging flow evolved into a more trustworthy interaction model after real device use exposed gesture, motion, and feedback problems.</p>
-              </div>
-              <div class="actions"><button class="button small" type="button" data-go="dancelog">View case</button><a class="button small" href="https://apps.apple.com/us/app/dance-log/id6795164130" target="_blank" rel="noopener noreferrer">App Store ↗</a></div>
-            </div>
+        <section class="section" id="portfolio">
+          <p class="eyebrow">Project portfolio</p>
+          <h2>Seven projects, three delivery states.</h2>
+          <div class="table-scroll">
+            <table class="comparison portfolio-table">
+              <thead>
+                <tr><th>Project</th><th>Type</th><th>Status</th><th>Summary</th><th></th></tr>
+              </thead>
+              <tbody>
+                <tr class="group" id="published"><td colspan="5">Published</td></tr>
+                <tr>
+                  <td><strong>Freestyle Challenge</strong></td>
+                  <td><span class="tag">iOS</span></td>
+                  <td><span class="status-badge published">Live</span></td>
+                  <td class="summary">Release-management case for AI-generated music as a verifiable product asset chain.</td>
+                  <td class="row-actions"><a class="button small" href="https://apps.apple.com/us/app/freestyle-dance-challenge/id6796975099" target="_blank" rel="noopener noreferrer">App Store</a><button class="button small" type="button" data-go="freestyle">View case</button></td>
+                </tr>
+                <tr>
+                  <td><strong>DanceLog</strong></td>
+                  <td><span class="tag">iOS</span></td>
+                  <td><span class="status-badge published">Live</span></td>
+                  <td class="summary">A local-first dance log that turned one-tap logging into a trustworthy interaction model.</td>
+                  <td class="row-actions"><a class="button small" href="https://apps.apple.com/us/app/dance-log/id6795164130" target="_blank" rel="noopener noreferrer">App Store</a><button class="button small" type="button" data-go="dancelog">View case</button></td>
+                </tr>
+                <tr class="group" id="in-dev"><td colspan="5">In development</td></tr>
+                <tr>
+                  <td><strong>NovelStudio</strong></td>
+                  <td><span class="tag">iOS</span></td>
+                  <td><span class="status-badge in-dev">In development</span></td>
+                  <td class="summary">An iOS writing studio with local-first notes and bring-your-own-model AI.</td>
+                  <td class="row-actions"><button class="button small" type="button" data-go="novelstudio">View case</button></td>
+                </tr>
+                <tr>
+                  <td><strong>SitePilot</strong></td>
+                  <td><span class="tag">iOS</span></td>
+                  <td><span class="status-badge in-dev">In development</span></td>
+                  <td class="summary">An iOS copilot for field and on-site service workflows.</td>
+                  <td class="row-actions"><button class="button small" type="button" data-go="sitepilot">View case</button></td>
+                </tr>
+                <tr class="group" id="demo"><td colspan="5">Demo</td></tr>
+                <tr>
+                  <td><strong>Safety Sandbox</strong></td>
+                  <td><span class="tag">Web</span></td>
+                  <td><span class="status-badge demo">Demo</span></td>
+                  <td class="summary">A three-paradigm LLM content-safety evaluation workbench.</td>
+                  <td class="row-actions"><a class="button small" href="https://safetysandbox.coze.site" target="_blank" rel="noopener noreferrer">Try demo</a><button class="button small" type="button" data-go="sandbox">View case</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Video Creation Sandbox</strong></td>
+                  <td><span class="tag">Web</span></td>
+                  <td><span class="status-badge demo">Demo</span></td>
+                  <td class="summary">An internal demo exploring AI-assisted video creation.</td>
+                  <td class="row-actions"><button class="button small" type="button" data-go="video-sandbox">View case</button></td>
+                </tr>
+                <tr>
+                  <td><strong>MarTech Sandbox</strong></td>
+                  <td><span class="tag">Web</span></td>
+                  <td><span class="status-badge demo">Demo</span></td>
+                  <td class="summary">An internal demo of a marketing-technology middle platform.</td>
+                  <td class="row-actions"><button class="button small" type="button" data-go="martech-sandbox">View case</button></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </section>
 
@@ -1331,6 +1384,92 @@
           <div class="case-navigation"><button class="button" type="button" data-go="freestyle">← Freestyle Challenge</button><button class="button primary" type="button" data-go="home">Back home</button></div>
         </section>
       </div>
+    <article class="page" data-page="novelstudio">
+      <div class="container">
+        <section class="section hero case-hero">
+          <p class="eyebrow">Case · In development · iOS</p>
+          <h1>NovelStudio</h1>
+          <p class="lead">An iOS writing studio with local-first notes and bring-your-own-model AI.</p>
+          <div class="facts">
+            <div class="fact"><span class="fact-label">Role</span><span class="fact-value">Product · Design · Build</span></div>
+            <div class="fact"><span class="fact-label">Status</span><span class="fact-value">In development</span></div>
+            <div class="fact"><span class="fact-label">Platform</span><span class="fact-value">iOS</span></div>
+            <div class="fact"><span class="fact-label">Evidence</span><span class="fact-value">Coming soon</span></div>
+          </div>
+        </section>
+        <section class="section">
+          <p class="eyebrow">Status</p>
+          <h2>Case study in progress.</h2>
+          <div class="callout"><strong>Note:</strong> Full case with screenshots, feature demos, and product docs will be added once materials are shared.</div>
+        </section>
+        <div class="case-navigation"><button class="button" type="button" data-go="home">Back home</button></div>
+      </div>
+    </article>
+
+    <article class="page" data-page="sitepilot">
+      <div class="container">
+        <section class="section hero case-hero">
+          <p class="eyebrow">Case · In development · iOS</p>
+          <h1>SitePilot</h1>
+          <p class="lead">An iOS copilot for field and on-site service workflows.</p>
+          <div class="facts">
+            <div class="fact"><span class="fact-label">Role</span><span class="fact-value">Product · Design · Build</span></div>
+            <div class="fact"><span class="fact-label">Status</span><span class="fact-value">In development</span></div>
+            <div class="fact"><span class="fact-label">Platform</span><span class="fact-value">iOS</span></div>
+            <div class="fact"><span class="fact-label">Evidence</span><span class="fact-value">Coming soon</span></div>
+          </div>
+        </section>
+        <section class="section">
+          <p class="eyebrow">Status</p>
+          <h2>Case study in progress.</h2>
+          <div class="callout"><strong>Note:</strong> Full case with screenshots, feature demos, and product docs will be added once materials are shared.</div>
+        </section>
+        <div class="case-navigation"><button class="button" type="button" data-go="home">Back home</button></div>
+      </div>
+    </article>
+
+    <article class="page" data-page="video-sandbox">
+      <div class="container">
+        <section class="section hero case-hero">
+          <p class="eyebrow">Case · Internal demo · Web</p>
+          <h1>Video Creation Sandbox</h1>
+          <p class="lead">An internal demo exploring AI-assisted video creation.</p>
+          <div class="facts">
+            <div class="fact"><span class="fact-label">Role</span><span class="fact-value">Product · Design</span></div>
+            <div class="fact"><span class="fact-label">Status</span><span class="fact-value">Demo</span></div>
+            <div class="fact"><span class="fact-label">Platform</span><span class="fact-value">Web</span></div>
+            <div class="fact"><span class="fact-label">Evidence</span><span class="fact-value">Coming soon</span></div>
+          </div>
+        </section>
+        <section class="section">
+          <p class="eyebrow">Status</p>
+          <h2>Case study in progress.</h2>
+          <div class="callout"><strong>Note:</strong> Full case with screenshots, feature demos, and product docs will be added once materials are shared.</div>
+        </section>
+        <div class="case-navigation"><button class="button" type="button" data-go="home">Back home</button></div>
+      </div>
+    </article>
+
+    <article class="page" data-page="martech-sandbox">
+      <div class="container">
+        <section class="section hero case-hero">
+          <p class="eyebrow">Case · Internal demo · Web</p>
+          <h1>MarTech Sandbox</h1>
+          <p class="lead">An internal demo of a marketing-technology middle platform.</p>
+          <div class="facts">
+            <div class="fact"><span class="fact-label">Role</span><span class="fact-value">Product · Design</span></div>
+            <div class="fact"><span class="fact-label">Status</span><span class="fact-value">Demo</span></div>
+            <div class="fact"><span class="fact-label">Platform</span><span class="fact-value">Web</span></div>
+            <div class="fact"><span class="fact-label">Evidence</span><span class="fact-value">Coming soon</span></div>
+          </div>
+        </section>
+        <section class="section">
+          <p class="eyebrow">Status</p>
+          <h2>Case study in progress.</h2>
+          <div class="callout"><strong>Note:</strong> Full case with screenshots, feature demos, and product docs will be added once materials are shared.</div>
+        </section>
+        <div class="case-navigation"><button class="button" type="button" data-go="home">Back home</button></div>
+      </div>
     </article>
   </main>
 
@@ -1340,9 +1479,17 @@
 
   <script>
     (() => {
-      const pages = new Set(['home', 'sandbox', 'freestyle', 'dancelog']);
+      const pages = new Set(['home', 'sandbox', 'freestyle', 'dancelog', 'novelstudio', 'sitepilot', 'video-sandbox', 'martech-sandbox']);
+      let pendingScroll = null;
       const menu = document.querySelector('.nav-links');
       const menuToggle = document.querySelector('.menu-toggle');
+
+      function scrollToSection(id) {
+        const anchor = document.getElementById(id);
+        if (!anchor) return;
+        const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        requestAnimationFrame(() => anchor.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }));
+      }
 
       function currentPage() {
         const page = location.hash.replace('#/', '').replace('#', '');
@@ -1364,6 +1511,11 @@
           ? "Shike's AI Product Studio"
           : `${document.querySelector(`[data-page="${page}"] h1`).textContent} — Shike Zhang`;
         if (scroll) window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+        if (pendingScroll && page === 'home') {
+          const target = pendingScroll;
+          pendingScroll = null;
+          scrollToSection(target);
+        }
       }
 
       document.addEventListener('click', (event) => {
@@ -1385,12 +1537,13 @@
         const scroller = event.target.closest('[data-scroll-to]');
         if (!scroller) return;
         event.preventDefault();
-        renderPage({ scroll: false });
-        const anchor = document.getElementById(scroller.dataset.scrollTo);
-        if (anchor) {
-          const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-          requestAnimationFrame(() => anchor.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }));
+        const id = scroller.dataset.scrollTo;
+        if (currentPage() !== 'home') {
+          pendingScroll = id;
+          location.hash = '/';
+          return;
         }
+        scrollToSection(id);
       });
 
       menuToggle.addEventListener('click', () => {
@@ -1850,7 +2003,32 @@
         "Pure frontend with mock data and a Chinese UI. The goal was to validate the interaction model, design language, and three-flow information architecture first — deliberately decoupled from backend readiness, so expensive real infrastructure would not be layered onto the wrong UI.": "纯前端 + 模拟数据 + 中文 UI。目标是先验证交互模型、设计语言与三 Flow 信息架构——刻意与后端就绪状态解耦，避免在错误的 UI 上叠加昂贵的真实基础设施。",
         "V2 · Real LLM over SSE": "V2 · 接真实 LLM（SSE）",
         "Switched to real LLM calls, a fully English UI, and SSE streaming. English targets a global AI-safety audience and performs more stably on safety tasks; SSE fits the strictly one-way server→client stream natively over HTTP with simple deployment, whereas WebSocket's bidirectional capability was unused.": "切换到真实 LLM 调用、全英文 UI 与 SSE 流式。英文面向全球 AI 安全研究者，且在安全类任务上表现更稳；SSE 贴合严格单向的 server→client 流，原生基于 HTTP、部署简单，而 WebSocket 的双向能力并未用上。",
-        "Tech stack": "技术栈"
+        "Tech stack": "技术栈",
+        "Project portfolio": "项目组合",
+        "Seven projects, three delivery states.": "七个项目，三种交付状态。",
+        "Project": "项目",
+        "Type": "类型",
+        "Summary": "概要",
+        "Published": "已上架",
+        "In development": "开发中",
+        "Demo": "内部演示",
+        "Live": "已上架",
+        "Platform": "平台",
+        "Coming soon": "即将推出",
+        "Try demo": "试用演示",
+        "Note:": "说明：",
+        "Case study in progress.": "案例撰写中。",
+        "Product · Design · Build": "产品 · 设计 · 开发",
+        "Product · Design": "产品 · 设计",
+        "Release-management case for AI-generated music as a verifiable product asset chain.": "将 AI 生成的音乐管理为可验证产品资产链的发布管理案例。",
+        "A local-first dance log that turned one-tap logging into a trustworthy interaction model.": "一款本地优先的舞蹈记录应用，把一键记录打磨成可信的交互模型。",
+        "An iOS writing studio with local-first notes and bring-your-own-model AI.": "一款本地优先、支持自带模型的 iOS 写作工作室。",
+        "An iOS copilot for field and on-site service workflows.": "面向现场与上门服务工作流的 iOS 智能助手。",
+        "A three-paradigm LLM content-safety evaluation workbench.": "一套三范式的大模型内容安全评估工作台。",
+        "An internal demo exploring AI-assisted video creation.": "探索 AI 辅助视频创作的内部演示。",
+        "An internal demo of a marketing-technology middle platform.": "营销技术中台的内部演示。",
+        "Case · In development · iOS": "案例 · 开发中 · iOS",
+        "Case · Internal demo · Web": "案例 · 内部演示 · Web"
       };
 
       let siteLang = 'en';
