@@ -846,6 +846,41 @@
         </section>
 
         <section class="section">
+          <p class="eyebrow">Positioning</p>
+          <h2>One workbench, three evaluation paradigms</h2>
+          <p class="lead">An LLM-powered content-safety evaluation workbench that unifies three evaluation paradigms — risk detection, red/blue adversarial testing, and LLM-as-a-Judge scoring — into one surface, with live streamed reasoning traces.</p>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Scope</p>
+          <h2>What the workbench covers</h2>
+          <table class="comparison">
+            <thead><tr><th>Module</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td>Three-workflow switching</td><td>Flow Tab switches dynamically; the input box and node graph stay in sync.</td></tr>
+              <tr><td>Seven real models</td><td>Doubao / GLM / MiniMax / Qwen and others, showing how safety levels differ across models.</td></tr>
+              <tr><td>Preset test cases</td><td>Jailbreak / red-blue / safety-eval samples load in one click (auto-switch flow + fill input).</td></tr>
+              <tr><td>Custom system prompt</td><td>A collapsible area for your own safety policy.</td></tr>
+              <tr><td>Real LLM calls</td><td>Three backend API routes return results over SSE streaming.</td></tr>
+              <tr><td>Streaming render + node animation</td><td>Pending → Running → Success states advance in sync.</td></tr>
+              <tr><td>Structured result parse</td><td>Auto-extracts verdict / score / riskType / riskLevel from model output.</td></tr>
+              <tr><td>Report export</td><td>JSON and Markdown, dual format.</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Product thinking</p>
+          <h2>Four decisions that shaped the build</h2>
+          <div class="grid-2">
+            <div class="card"><h3>01 · Make reasoning a first-class citizen</h3><p>Most moderation tools are black boxes: submit text, get a pass or block. But safety needs explainability — you cannot improve or audit a guardrail you cannot read. The core decision was to stream the model's reasoning live, paired with a workflow node graph that advances with the process, turning an invisible pipeline into something readable and auditable. A detector becomes an interpreter and an auditor.</p></div>
+            <div class="card"><h3>02 · Three flows are a maturity model</h3><p>Flow 1 detects: is this content safe? — for triage. Flow 2 attacks: can an adversary breach my guardrail? — active and adversarial, the proof that safety is not static. Flow 3 judges: how safe is my model overall? — meta-evaluation against a rubric, the strategic layer. Together they form a detect → attack → assess progression that mirrors a real security team's lifecycle. This is deliberate information architecture, not feature stacking.</p></div>
+            <div class="card"><h3>03 · Design language is persona positioning</h3><p>SOC (security operations center) plus a minimal lab aesthetic, deep indigo as the primary, with pass-green / block-red / running-amber status colors — this speaks to the security and risk professional persona, not the ordinary consumer. The visuals are the positioning.</p></div>
+            <div class="card"><h3>04 · Streaming is a control plane</h3><p>Typewriter-style live rendering is not only decorative: it lets the evaluator interrupt the model mid-decision through AbortController. That itself is a cost-control mechanism — killing a runaway generation early saves tokens. So the streaming that seems to add token cost is really part of the product's control plane.</p></div>
+          </div>
+        </section>
+
+        <section class="section">
           <p class="eyebrow">The problem</p>
           <h2>The safety question is larger than detecting a keyword.</h2>
           <div class="grid-2">
@@ -1041,6 +1076,25 @@
               <p>I'm continuously refining this sandbox architecture. If you've run into similar prompt-drift or eval reliability challenges, I'd love to exchange insights.</p>
               <a class="button small" href="https://www.linkedin.com/in/shikezhang" target="_blank" rel="noopener">Leave a comment / Drop a message ↗</a>
             </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <p class="eyebrow">Build story</p>
+          <h2>From a mock UI to a live LLM backend</h2>
+          <div class="grid-2">
+            <div class="card"><h3>V1 · Mock-first validation</h3><p>Pure frontend with mock data and a Chinese UI. The goal was to validate the interaction model, design language, and three-flow information architecture first — deliberately decoupled from backend readiness, so expensive real infrastructure would not be layered onto the wrong UI.</p></div>
+            <div class="card"><h3>V2 · Real LLM over SSE</h3><p>Switched to real LLM calls, a fully English UI, and SSE streaming. English targets a global AI-safety audience and performs more stably on safety tasks; SSE fits the strictly one-way server→client stream natively over HTTP with simple deployment, whereas WebSocket's bidirectional capability was unused.</p></div>
+          </div>
+          <p class="eyebrow">Tech stack</p>
+          <div class="tags">
+            <span class="tag">Next.js 16 (App Router)</span>
+            <span class="tag">React 19</span>
+            <span class="tag">TypeScript 5</span>
+            <span class="tag">shadcn/ui</span>
+            <span class="tag">Tailwind CSS 4</span>
+            <span class="tag">SSE streaming</span>
+            <span class="tag">coze-coding-dev-sdk</span>
           </div>
         </section>
 
@@ -1756,7 +1810,47 @@
         "Key takeaway · Constraint beats autonomy": "关键结论 · 约束胜过自主",
         "Dynamic planners and live red/blue agent debates were cut on purpose: evaluation runs on a deterministic five-step pipeline, and analysis happens after the run, where every step stays traceable.": "动态规划 Agent 与实时红蓝对抗是有意砍掉的：评测跑在确定性五步流水线上，分析发生在运行之后——每一步都可追溯。",
         "Key takeaway · The 85% lesson": "关键结论 · 85% 的教训",
-        "A high block rate looked great until the misses were read — DAN role-play and PII extraction made up 36% of failures, and chasing the rate had begun to over-block normal requests.": "85% 的拦截率一度很好看，直到读失败明细——DAN 角色扮演与 PII 提取占了失效案例的 36%，而追逐拦截率已开始误伤正常请求。"
+        "A high block rate looked great until the misses were read — DAN role-play and PII extraction made up 36% of failures, and chasing the rate had begun to over-block normal requests.": "85% 的拦截率一度很好看，直到读失败明细——DAN 角色扮演与 PII 提取占了失效案例的 36%，而追逐拦截率已开始误伤正常请求。",
+        "Positioning": "定位",
+        "One workbench, three evaluation paradigms": "一个工作台，三种评估范式",
+        "An LLM-powered content-safety evaluation workbench that unifies three evaluation paradigms — risk detection, red/blue adversarial testing, and LLM-as-a-Judge scoring — into one surface, with live streamed reasoning traces.": "一个基于大语言模型的内容安全评估工作台，把「风险检测 / 红蓝对抗 / LLM-as-a-Judge 评分」三种评估范式整合在同一个界面，并实时流式展示模型推理过程。",
+        "Scope": "功能范围",
+        "What the workbench covers": "工作台覆盖的能力",
+        "Module": "模块",
+        "Description": "说明",
+        "Three-workflow switching": "三工作流切换",
+        "Flow Tab switches dynamically; the input box and node graph stay in sync.": "Flow Tab 动态切换，输入框与节点图保持联动。",
+        "Seven real models": "七个真实模型",
+        "Doubao / GLM / MiniMax / Qwen and others, showing how safety levels differ across models.": "豆包 / 智谱 / MiniMax / 通义千问等，体现不同模型的安全水位差异。",
+        "Preset test cases": "预置测试案例",
+        "Jailbreak / red-blue / safety-eval samples load in one click (auto-switch flow + fill input).": "越狱 / 红蓝对抗 / 安全评估样本一键加载（自动切换 Flow 并填充输入）。",
+        "Custom system prompt": "自定义系统提示词",
+        "A collapsible area for your own safety policy.": "可折叠区域，支持自定义安全策略。",
+        "Real LLM calls": "真实 LLM 调用",
+        "Three backend API routes return results over SSE streaming.": "三个后端 API 路由通过 SSE 流式返回结果。",
+        "Streaming render + node animation": "流式渲染 + 节点动画",
+        "Pending → Running → Success states advance in sync.": "Pending → Running → Success 状态同步推进。",
+        "Structured result parse": "结构化结果解析",
+        "Auto-extracts verdict / score / riskType / riskLevel from model output.": "自动从模型输出提取 verdict / score / riskType / riskLevel。",
+        "Report export": "报告导出",
+        "JSON and Markdown, dual format.": "JSON 与 Markdown 双格式。",
+        "Product thinking": "产品思考",
+        "Four decisions that shaped the build": "塑造这套产品的四个决策",
+        "01 · Make reasoning a first-class citizen": "01 · 让推理成为一等公民",
+        "Most moderation tools are black boxes: submit text, get a pass or block. But safety needs explainability — you cannot improve or audit a guardrail you cannot read. The core decision was to stream the model's reasoning live, paired with a workflow node graph that advances with the process, turning an invisible pipeline into something readable and auditable. A detector becomes an interpreter and an auditor.": "多数审核工具是黑盒：提交文本，返回一个通过或拦截。但安全恰恰最需要可解释性——你无法改进或审计一个看不懂的护栏。核心决策是把模型的推理链路实时流式展示，配合随流程推进的工作流节点图，把不可见的评估管线变得可读、可审计。检测器由此升级为解释器与审计器。",
+        "02 · Three flows are a maturity model": "02 · 三套流程是一个成熟度模型",
+        "Flow 1 detects: is this content safe? — for triage. Flow 2 attacks: can an adversary breach my guardrail? — active and adversarial, the proof that safety is not static. Flow 3 judges: how safe is my model overall? — meta-evaluation against a rubric, the strategic layer. Together they form a detect → attack → assess progression that mirrors a real security team's lifecycle. This is deliberate information architecture, not feature stacking.": "Flow 1 检测：这条内容安全吗？——用于运营分流。Flow 2 进攻：攻击者能击穿我的护栏吗？——主动且对抗，证明安全并非静态。Flow 3 评估：我的模型整体安全水平如何？——基于评分标准的元评估，战略层。三者构成检测 → 进攻 → 评估的递进，映射真实安全团队的运作生命周期。这是刻意的信息架构，而非功能堆叠。",
+        "03 · Design language is persona positioning": "03 · 设计语言即 persona 定位",
+        "SOC (security operations center) plus a minimal lab aesthetic, deep indigo as the primary, with pass-green / block-red / running-amber status colors — this speaks to the security and risk professional persona, not the ordinary consumer. The visuals are the positioning.": "SOC（安全运营中心）加极简实验室风格、深靛蓝主色、通过绿 / 拦截红 / 运行中琥珀的状态色——向安全与风控专业人士这个 persona 说话，而非普通消费者。视觉即定位。",
+        "04 · Streaming is a control plane": "04 · 流式即控制平面",
+        "Typewriter-style live rendering is not only decorative: it lets the evaluator interrupt the model mid-decision through AbortController. That itself is a cost-control mechanism — killing a runaway generation early saves tokens. So the streaming that seems to add token cost is really part of the product's control plane.": "打字机式实时渲染不只是好看：它让评估者能在模型形成判定的中途通过 AbortController 打断。这本身就是一个成本控制机制——提前掐掉跑飞的生成为你省下 Token。所以看似增加 Token 成本的流式，其实正是产品控制平面的一部分。",
+        "Build story": "构建故事",
+        "From a mock UI to a live LLM backend": "从模拟界面到真实 LLM 后端",
+        "V1 · Mock-first validation": "V1 · 先验证后接真",
+        "Pure frontend with mock data and a Chinese UI. The goal was to validate the interaction model, design language, and three-flow information architecture first — deliberately decoupled from backend readiness, so expensive real infrastructure would not be layered onto the wrong UI.": "纯前端 + 模拟数据 + 中文 UI。目标是先验证交互模型、设计语言与三 Flow 信息架构——刻意与后端就绪状态解耦，避免在错误的 UI 上叠加昂贵的真实基础设施。",
+        "V2 · Real LLM over SSE": "V2 · 接真实 LLM（SSE）",
+        "Switched to real LLM calls, a fully English UI, and SSE streaming. English targets a global AI-safety audience and performs more stably on safety tasks; SSE fits the strictly one-way server→client stream natively over HTTP with simple deployment, whereas WebSocket's bidirectional capability was unused.": "切换到真实 LLM 调用、全英文 UI 与 SSE 流式。英文面向全球 AI 安全研究者，且在安全类任务上表现更稳；SSE 贴合严格单向的 server→client 流，原生基于 HTTP、部署简单，而 WebSocket 的双向能力并未用上。",
+        "Tech stack": "技术栈"
       };
 
       let siteLang = 'en';
