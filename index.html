@@ -764,8 +764,6 @@
           <div class="dropdown-group">
             <p class="dropdown-group-label">Demo</p>
             <button class="dropdown-item featured" type="button" data-go="sandbox" role="menuitem">Safety Sandbox ★</button>
-            <button class="dropdown-item" type="button" data-go="video-sandbox" role="menuitem">Video Creation Sandbox</button>
-            <button class="dropdown-item" type="button" data-go="martech-sandbox" role="menuitem">MarTech Sandbox</button>
           </div>
           <div class="dropdown-group">
             <p class="dropdown-group-label">Published</p>
@@ -774,6 +772,8 @@
           </div>
           <div class="dropdown-group">
             <p class="dropdown-group-label">In development</p>
+            <button class="dropdown-item" type="button" data-go="video-sandbox" role="menuitem">Video Creation Sandbox</button>
+            <button class="dropdown-item" type="button" data-go="martech-sandbox" role="menuitem">MarTech Sandbox</button>
             <button class="dropdown-item" type="button" data-go="novelstudio" role="menuitem">NovelStudio</button>
             <button class="dropdown-item" type="button" data-go="sitepilot" role="menuitem">SitePilot</button>
           </div>
@@ -841,20 +841,6 @@
                   <td class="summary">A three-paradigm LLM content-safety evaluation workbench.</td>
                   <td class="row-actions"><a class="button small" href="https://safetysandbox.coze.site" target="_blank" rel="noopener noreferrer">Try demo</a><button class="button small" type="button" data-go="sandbox">View case</button></td>
                 </tr>
-                <tr>
-                  <td><strong>Video Creation Sandbox</strong></td>
-                  <td><span class="tag">Web</span></td>
-                  <td><span class="status-badge demo">Demo</span></td>
-                  <td class="summary">An internal demo exploring AI-assisted video creation.</td>
-                  <td class="row-actions"><button class="button small" type="button" data-go="video-sandbox">View case</button></td>
-                </tr>
-                <tr>
-                  <td><strong>MarTech Sandbox</strong></td>
-                  <td><span class="tag">Web</span></td>
-                  <td><span class="status-badge demo">Demo</span></td>
-                  <td class="summary">An internal demo of a marketing-technology middle platform.</td>
-                  <td class="row-actions"><button class="button small" type="button" data-go="martech-sandbox">View case</button></td>
-                </tr>
                 <tr class="group" id="published"><td colspan="5">Published</td></tr>
                 <tr>
                   <td><strong>Freestyle Challenge</strong></td>
@@ -884,6 +870,20 @@
                   <td><span class="status-badge in-dev">In development</span></td>
                   <td class="summary">An iOS copilot for field and on-site service workflows.</td>
                   <td class="row-actions"><button class="button small" type="button" data-go="sitepilot">View case</button></td>
+                </tr>
+                <tr>
+                  <td><strong>Video Creation Sandbox</strong></td>
+                  <td><span class="tag">Web</span></td>
+                  <td><span class="status-badge in-dev">In development</span></td>
+                  <td class="summary">An AI-assisted video creation sandbox currently in development.</td>
+                  <td class="row-actions"><button class="button small" type="button" data-go="video-sandbox">View case</button></td>
+                </tr>
+                <tr>
+                  <td><strong>MarTech Sandbox</strong></td>
+                  <td><span class="tag">Web</span></td>
+                  <td><span class="status-badge in-dev">In development</span></td>
+                  <td class="summary">A marketing-technology middle-platform sandbox currently in development.</td>
+                  <td class="row-actions"><button class="button small" type="button" data-go="martech-sandbox">View case</button></td>
                 </tr>
               </tbody>
             </table>
@@ -1468,12 +1468,12 @@
     <article class="page" data-page="video-sandbox">
       <div class="container">
         <section class="section hero case-hero">
-          <p class="eyebrow">Case · Internal demo · Web</p>
+          <p class="eyebrow">Case · In development · Web</p>
           <h1>Video Creation Sandbox</h1>
-          <p class="lead">An internal demo exploring AI-assisted video creation.</p>
+          <p class="lead">An AI-assisted video creation sandbox currently in development.</p>
           <div class="facts">
             <div class="fact"><span class="fact-label">Role</span><span class="fact-value">Product · Design</span></div>
-            <div class="fact"><span class="fact-label">Status</span><span class="fact-value">Demo</span></div>
+            <div class="fact"><span class="fact-label">Status</span><span class="fact-value">In development</span></div>
             <div class="fact"><span class="fact-label">Platform</span><span class="fact-value">Web</span></div>
             <div class="fact"><span class="fact-label">Evidence</span><span class="fact-value">Coming soon</span></div>
           </div>
@@ -1490,12 +1490,12 @@
     <article class="page" data-page="martech-sandbox">
       <div class="container">
         <section class="section hero case-hero">
-          <p class="eyebrow">Case · Internal demo · Web</p>
+          <p class="eyebrow">Case · In development · Web</p>
           <h1>MarTech Sandbox</h1>
-          <p class="lead">An internal demo of a marketing-technology middle platform.</p>
+          <p class="lead">A marketing-technology middle-platform sandbox currently in development.</p>
           <div class="facts">
             <div class="fact"><span class="fact-label">Role</span><span class="fact-value">Product · Design</span></div>
-            <div class="fact"><span class="fact-label">Status</span><span class="fact-value">Demo</span></div>
+            <div class="fact"><span class="fact-label">Status</span><span class="fact-value">In development</span></div>
             <div class="fact"><span class="fact-label">Platform</span><span class="fact-value">Web</span></div>
             <div class="fact"><span class="fact-label">Evidence</span><span class="fact-value">Coming soon</span></div>
           </div>
@@ -2060,10 +2060,10 @@
         "An iOS writing studio with local-first notes and bring-your-own-model AI.": "一款本地优先、支持自带模型的 iOS 写作工作室。",
         "An iOS copilot for field and on-site service workflows.": "面向现场与上门服务工作流的 iOS 智能助手。",
         "A three-paradigm LLM content-safety evaluation workbench.": "一套三范式的大模型内容安全评估工作台。",
-        "An internal demo exploring AI-assisted video creation.": "探索 AI 辅助视频创作的内部演示。",
-        "An internal demo of a marketing-technology middle platform.": "营销技术中台的内部演示。",
+        "An AI-assisted video creation sandbox currently in development.": "一个开发中的 AI 辅助视频创作沙盒。",
+        "A marketing-technology middle-platform sandbox currently in development.": "一个开发中的营销技术中台沙盒。",
         "Case · In development · iOS": "案例 · 开发中 · iOS",
-        "Case · Internal demo · Web": "案例 · 内部演示 · Web",
+        "Case · In development · Web": "案例 · 开发中 · Web",
         "Product": "作品",
         "Safety Sandbox ★": "安全沙盒 ★"
       };
