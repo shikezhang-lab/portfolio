@@ -19,7 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const API = 'https://api.appstoreconnect.io';
+const API = 'https://api.appstoreconnect.apple.com';
 const APP_IDS = (process.env.ASC_APP_IDS || '6796975099,6795164130').split(',').map(s => s.trim()).filter(Boolean);
 const WINDOW = 30; // days
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
