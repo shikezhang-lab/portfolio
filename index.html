@@ -496,6 +496,18 @@
     .metric { min-width: 160px; flex: 1; border-top: 3px solid var(--accent); padding: 14px 0; }
     .metric strong { display: block; font-size: 2rem; letter-spacing: -.04em; }
     .metric span { color: var(--muted); }
+    .traction-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+    .kpi-card { border: 1px solid var(--line); border-radius: 2px; background: var(--white); padding: 18px; display: flex; flex-direction: column; gap: 6px; }
+    .kpi-num { font-size: 2.2rem; letter-spacing: -.04em; line-height: 1; color: var(--ink); }
+    .kpi-num.accent { color: var(--accent); }
+    .kpi-label { font-weight: 700; line-height: 1.35; }
+    .kpi-sub { color: var(--muted); font-size: .82rem; line-height: 1.4; }
+    .traction-chart { margin-top: 14px; border: 1px solid var(--line); border-radius: 2px; background: var(--white); padding: 18px; }
+    .traction-chart svg { display: block; width: 100%; height: auto; }
+    .traction-note { color: var(--muted); font-size: .85rem; margin: 0; }
+    .traction-source { color: var(--muted); font-size: .8rem; margin-top: 12px; }
+    @media (max-width: 860px) { .traction-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 520px) { .traction-grid { grid-template-columns: 1fr; } }
     .process-list { counter-reset: process; display: grid; gap: 0; margin-top: 24px; }
     .process-item {
       counter-increment: process;
@@ -890,6 +902,38 @@
           </div>
         </section>
 
+        <section class="section" id="traction">
+          <p class="eyebrow">Traction</p>
+          <h2>Early momentum across two live apps.</h2>
+          <div class="traction-grid">
+            <div class="kpi-card">
+              <strong class="kpi-num accent" id="kpi-growth">+733%</strong>
+              <span class="kpi-label">Downloads growth · month over month</span>
+              <span class="kpi-sub">Both apps combined · last 30 days</span>
+            </div>
+            <div class="kpi-card">
+              <strong class="kpi-num">2</strong>
+              <span class="kpi-label">Live iOS apps on the App Store</span>
+              <span class="kpi-sub">Freestyle Challenge · DanceLog</span>
+            </div>
+            <div class="kpi-card">
+              <strong class="kpi-num" id="kpi-share">88%</strong>
+              <span class="kpi-label">of recent downloads on DanceLog</span>
+              <span class="kpi-sub">Focused launch momentum</span>
+            </div>
+            <div class="kpi-card">
+              <strong class="kpi-num" id="kpi-dancelog">+633%</strong>
+              <span class="kpi-label">DanceLog downloads · MoM</span>
+              <span class="kpi-sub">Strongest mover this month</span>
+            </div>
+          </div>
+          <div class="traction-chart">
+            <div class="tags"><span class="tag strong">Daily downloads</span><span class="tag">Last 30 days</span></div>
+            <div id="traction-chart"></div>
+          </div>
+          <p class="traction-source">Data: App Store Connect · last 30 days · updated <span id="traction-updated">2026-09-20</span></p>
+        </section>
+
         <section class="section" id="featured">
           <p class="eyebrow">Featured case · AI evaluation system</p>
           <div class="card featured-card">
@@ -1213,6 +1257,7 @@
           <div class="facts">
             <div class="fact"><span class="fact-label">Role</span><span class="fact-value">Product · Design · Build · Launch</span></div>
             <div class="fact"><span class="fact-label">Status</span><span class="fact-value">Shipped</span></div>
+            <div class="fact"><span class="fact-label">Traction</span><span class="fact-value" data-traction="freestyle">Early traction</span></div>
             <div class="fact"><span class="fact-label">Data</span><span class="fact-value">AI generative local music</span></div>
             <div class="fact"><span class="fact-label">Evidence</span><span class="fact-value">PRD · App Store · Rights materials</span></div>
           </div>
@@ -1325,6 +1370,7 @@
           <div class="facts">
             <div class="fact"><span class="fact-label">Role</span><span class="fact-value">Product · Design · Build</span></div>
             <div class="fact"><span class="fact-label">Status</span><span class="fact-value">Shipped</span></div>
+            <div class="fact"><span class="fact-label">Traction</span><span class="fact-value" data-traction="dancelog">+633% downloads · MoM</span></div>
             <div class="fact"><span class="fact-label">Data</span><span class="fact-value">fully local</span></div>
             <div class="fact"><span class="fact-label">Evidence</span><span class="fact-value">App Store · Tests · Device UAT</span></div>
           </div>
@@ -2065,8 +2111,37 @@
         "Case · In development · iOS": "案例 · 开发中 · iOS",
         "Case · In development · Web": "案例 · 开发中 · Web",
         "Product": "作品",
-        "Safety Sandbox ★": "安全沙盒 ★"
+        "Safety Sandbox ★": "安全沙盒 ★",
+        "Traction": "增长数据",
+        "Early momentum across two live apps.": "两款已上架应用的正增长势头。",
+        "Downloads growth · month over month": "下载量环比增长",
+        "Both apps combined · last 30 days": "两款应用合计 · 近 30 天",
+        "Live iOS apps on the App Store": "App Store 在架 iOS 应用",
+        "of recent downloads on DanceLog": "的近期下载来自 DanceLog",
+        "Focused launch momentum": "聚焦发布的增长势能",
+        "DanceLog downloads · MoM": "DanceLog 下载量 · 环比",
+        "Strongest mover this month": "本月增长最快",
+        "Daily downloads": "每日下载",
+        "Last 30 days": "近 30 天",
+        "Daily trend appears here once the first automatic App Store Connect sync completes.": "首次自动同步 App Store Connect 数据后，这里将显示每日下载趋势。",
+        "Data: App Store Connect · last 30 days · updated": "数据来源：App Store Connect · 近 30 天 · 更新于",
+        "downloads · MoM": "下载量 · 环比",
+        "Early traction": "早期增长中"
       };
+
+      /* ASC-METRICS:START (auto-updated by GitHub Action — do not edit by hand) */
+      const ASC_METRICS = {
+        updatedAt: "2026-09-20",
+        windowDays: 30,
+        totals: { downloadsMoMPct: 733 },
+        apps: [
+          { key: "dancelog", name: "DanceLog", downloadsMoMPct: 633, sharePct: 88 },
+          { key: "freestyle", name: "Freestyle Challenge", downloadsMoMPct: null, sharePct: 12 }
+        ],
+        daily: null,
+        impressions: null
+      };
+      /* ASC-METRICS:END */
 
       let siteLang = 'en';
       try { if (localStorage.getItem('site-lang') === 'zh') siteLang = 'zh'; } catch (e) {}
@@ -2112,6 +2187,57 @@
       langButtons.forEach((button) => button.addEventListener('click', () => {
         if (button.dataset.langBtn !== siteLang) setSiteLang(button.dataset.langBtn);
       }));
+
+      function renderTraction() {
+        const m = ASC_METRICS;
+        if (!m) return;
+        const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+        if (m.updatedAt) set('traction-updated', m.updatedAt);
+        if (m.totals && typeof m.totals.downloadsMoMPct === 'number') set('kpi-growth', '+' + m.totals.downloadsMoMPct + '%');
+        const apps = m.apps || [];
+        const byKey = (key) => apps.find((a) => a.key === key);
+        const dancelog = byKey('dancelog');
+        if (dancelog && typeof dancelog.sharePct === 'number') set('kpi-share', dancelog.sharePct + '%');
+        if (dancelog && typeof dancelog.downloadsMoMPct === 'number') set('kpi-dancelog', '+' + dancelog.downloadsMoMPct + '%');
+        document.querySelectorAll('[data-traction]').forEach((el) => {
+          const app = byKey(el.dataset.traction);
+          if (!app) return;
+          if (typeof app.downloadsMoMPct === 'number') {
+            el.innerHTML = '';
+            const strong = document.createElement('strong');
+            strong.textContent = '+' + app.downloadsMoMPct + '%';
+            el.appendChild(strong);
+            el.appendChild(document.createTextNode(' downloads · MoM'));
+          } else {
+            el.textContent = 'Early traction';
+          }
+        });
+        const chart = document.getElementById('traction-chart');
+        if (!chart) return;
+        if (m.daily && Array.isArray(m.daily.dates) && m.daily.dates.length) {
+          const W = 640, H = 150, PAD = 8;
+          const series = [
+            { key: 'dancelog', color: '#0c447c' },
+            { key: 'freestyle', color: '#85b7eb' }
+          ].filter((s) => Array.isArray(m.daily[s.key]));
+          const all = series.flatMap((s) => m.daily[s.key]);
+          const max = Math.max(1, ...all);
+          const x = (i) => PAD + (i * (W - 2 * PAD)) / Math.max(1, m.daily.dates.length - 1);
+          const y = (v) => H - PAD - (v * (H - 2 * PAD)) / max;
+          let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Daily downloads trend">';
+          series.forEach((s) => {
+            const pts = m.daily[s.key].map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
+            svg += '<polyline points="' + pts + '" fill="none" stroke="' + s.color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+          });
+          svg += '</svg>';
+          const legend = series.map((s) => '<span class="tag">' + (s.key === 'dancelog' ? 'DanceLog' : 'Freestyle Challenge') + '</span>').join('');
+          chart.innerHTML = svg + '<div class="tags" style="margin-top:10px">' + legend + '</div>';
+        } else {
+          chart.innerHTML = '<p class="traction-note">Daily trend appears here once the first automatic App Store Connect sync completes.</p>';
+        }
+      }
+
+      renderTraction();
 
       setSiteLang(siteLang, { save: false });
 
