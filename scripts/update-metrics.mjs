@@ -109,15 +109,24 @@ function buildWindow(now = new Date()) {
 
 /** Fetch one metric series (daily values) for one app via Analytics Reports (STANDALONE). */
 async function fetchSeries(token, appId, reportMatchers) {
-  let requests = await api(token, `/v1/apps/${appId}/analyticsReportRequests?filter[accessType]=STANDALONE`);
-  if (!requests || !requests.data || requests.data.length === 0) {
-    console.log(`  creating analyticsReportRequest for app ${appId}...`);
-    requests = await api(token, `/v1/apps/${appId}/analyticsReportRequests`, {
-      method: 'POST',
-      body: { data: { type: 'analyticsReportRequests', attributes: { accessType: 'STANDALONE' } } }
-    });
+  let requests = await api(token, `/v1/apps/${appId}/analyticsReportRequests`);
+  let list = (requests && requests.data) || [];
+  if (list.length === 0) {
+    for (const accessType of ['ONGOING', 'ONE_TIME_SNAPSHOT']) {
+      try {
+        console.log(`  creating analyticsReportRequest (${accessType}) for app ${appId}...`);
+        requests = await api(token, `/v1/apps/${appId}/analyticsReportRequests`, {
+          method: 'POST',
+          body: { data: { type: 'analyticsReportRequests', attributes: { accessType } } }
+        });
+        if (requests && requests.data && requests.data.length) { list = requests.data; break; }
+      } catch (e) {
+        console.log('  create failed: ' + e.message.slice(0, 200));
+      }
+    }
   }
-  const request = requests.data[0];
+  if (!list.length) return null;
+  const request = list[0];
   const reports = await api(token, `/v1/analyticsReportRequests/${request.id}/reports?pageSize=200`);
   const names = (reports.data || []).map(r => r.attributes.name);
   console.log(`  app ${appId} reports: [${names.join(' | ')}]`);
