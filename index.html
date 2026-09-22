@@ -506,6 +506,17 @@
     .traction-chart svg { display: block; width: 100%; height: auto; }
     .traction-note { color: var(--muted); font-size: .85rem; margin: 0; }
     .traction-source { color: var(--muted); font-size: .8rem; margin-top: 12px; }
+    .traction-honest { margin-top: 14px; color: var(--muted); font-size: .9rem; line-height: 1.55; border-left: 3px solid var(--accent); padding: 4px 0 4px 12px; }
+    .traction-honest strong { color: var(--ink); }
+    .traction-details { margin-top: 14px; border: 1px solid var(--line); border-radius: 2px; background: var(--white); padding: 12px 18px; }
+    .traction-details summary { cursor: pointer; font-weight: 700; color: var(--accent); font-size: .9rem; outline: none; }
+    .traction-details summary::marker { color: var(--accent); }
+    .traction-raw { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: .88rem; }
+    .traction-raw th, .traction-raw td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+    .traction-raw th:first-child, .traction-raw td:first-child { text-align: left; }
+    .traction-raw thead th { color: var(--muted); font-weight: 700; border-bottom: 1px solid var(--ink); }
+    .traction-raw tr.raw-total td { font-weight: 700; border-top: 2px solid var(--line); }
+    .traction-raw tr.raw-total td:first-child { color: var(--accent); }
     @media (max-width: 860px) { .traction-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (max-width: 520px) { .traction-grid { grid-template-columns: 1fr; } }
     .process-list { counter-reset: process; display: grid; gap: 0; margin-top: 24px; }
@@ -927,10 +938,20 @@
               <span class="kpi-sub">Strongest mover this month</span>
             </div>
           </div>
-          <div class="traction-chart">
-            <div class="tags"><span class="tag strong">Daily downloads</span><span class="tag">Last 30 days</span></div>
-            <div id="traction-chart"></div>
-          </div>
+          <p class="traction-honest">Real scale, stated plainly: <strong id="traction-abs">—</strong> organic installs across both apps in the last 30 days, with $0 paid marketing. Early-validation stage — the signal that matters is retention &amp; engagement quality, not volume yet.</p>
+          <details class="traction-details">
+            <summary>View the raw numbers</summary>
+            <table class="traction-raw">
+              <thead>
+                <tr><th>App</th><th>Downloads (30d)</th><th>Impressions (30d)</th><th>Conv.</th></tr>
+              </thead>
+              <tbody id="traction-raw-body"></tbody>
+            </table>
+            <div class="traction-chart">
+              <div class="tags"><span class="tag strong">Daily downloads</span><span class="tag">Last 30 days</span></div>
+              <div id="traction-chart"></div>
+            </div>
+          </details>
           <p class="traction-source">Data: App Store Connect · last 30 days · updated <span id="traction-updated">2026-09-20</span></p>
         </section>
 
@@ -2126,7 +2147,15 @@
         "Daily trend appears here once the first automatic App Store Connect sync completes.": "首次自动同步 App Store Connect 数据后，这里将显示每日下载趋势。",
         "Data: App Store Connect · last 30 days · updated": "数据来源：App Store Connect · 近 30 天 · 更新于",
         "downloads · MoM": "下载量 · 环比",
-        "Early traction": "早期增长中"
+        "Early traction": "早期增长中",
+        "Real scale, stated plainly:": "真实量级，如实说明：",
+        "organic installs across both apps in the last 30 days, with $0 paid marketing. Early-validation stage — the signal that matters is retention & engagement quality, not volume yet.": "近 30 天两款应用合计的有机（自然）安装量，零付费投放。处于早期验证阶段——真正有价值的信号是留存与参与度质量，而非量级。",
+        "View the raw numbers": "查看原始数据",
+        "App": "应用",
+        "Downloads (30d)": "下载量（30天）",
+        "Impressions (30d)": "浏览量（30天）",
+        "Conv.": "转化率",
+        "Combined": "合计"
       };
 
       /* ASC-METRICS:START (auto-updated by GitHub Action — do not edit by hand) */
@@ -2194,6 +2223,8 @@
         const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
         if (m.updatedAt) set('traction-updated', m.updatedAt);
         if (m.totals && typeof m.totals.downloadsMoMPct === 'number') set('kpi-growth', '+' + m.totals.downloadsMoMPct + '%');
+        if (m.totals && typeof m.totals.downloads30d === 'number') set('traction-abs', m.totals.downloads30d.toLocaleString());
+        else set('traction-abs', '—');
         const apps = m.apps || [];
         const byKey = (key) => apps.find((a) => a.key === key);
         const dancelog = byKey('dancelog');
@@ -2212,6 +2243,25 @@
             el.textContent = 'Early traction';
           }
         });
+        const APP_NAMES = { dancelog: 'DanceLog', freestyle: 'Freestyle Challenge' };
+        const rawBody = document.getElementById('traction-raw-body');
+        if (rawBody) {
+          rawBody.innerHTML = '';
+          const fmt = (n) => (typeof n === 'number' ? n.toLocaleString() : '—');
+          const conv = (d, i) => (typeof d === 'number' && typeof i === 'number' && i > 0 ? (Math.round((d / i) * 1000) / 10) + '%' : '—');
+          let totalD = 0, totalI = 0, hasD = false, hasI = false;
+          apps.forEach((a) => {
+            if (typeof a.downloads30d === 'number') { totalD += a.downloads30d; hasD = true; }
+            if (typeof a.impressions30d === 'number') { totalI += a.impressions30d; hasI = true; }
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + (a.name || APP_NAMES[a.key] || a.key) + '</td><td>' + fmt(a.downloads30d) + '</td><td>' + fmt(a.impressions30d) + '</td><td>' + conv(a.downloads30d, a.impressions30d) + '</td>';
+            rawBody.appendChild(tr);
+          });
+          const trt = document.createElement('tr');
+          trt.className = 'raw-total';
+          trt.innerHTML = '<td>Combined</td><td>' + (hasD ? fmt(totalD) : '—') + '</td><td>' + (hasI ? fmt(totalI) : '—') + '</td><td>' + (hasD && hasI ? conv(totalD, totalI) : '—') + '</td>';
+          rawBody.appendChild(trt);
+        }
         const chart = document.getElementById('traction-chart');
         if (!chart) return;
         if (m.daily && Array.isArray(m.daily.dates) && m.daily.dates.length) {

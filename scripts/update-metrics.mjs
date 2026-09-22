@@ -193,16 +193,23 @@ async function main() {
   const totalPrev = withD.reduce((s, a) => s + (sumWindow(appResults[apps.indexOf(a)].downloads?.byDay || new Map(), previous)), 0);
   for (const a of apps) {
     if (totalCur > 0 && typeof a.downloads30d === 'number') a.sharePct = Math.round((a.downloads30d / totalCur) * 100);
-    delete a.downloads30d;
   }
+
+  // Absolute totals (retained for honest on-site disclosure — not just MoM %).
+  const withI = apps.filter(a => typeof a.impressions30d === 'number');
+  const totalImpCur = withI.reduce((s, a) => s + a.impressions30d, 0);
 
   const metrics = {
     updatedAt: dayKey(new Date()),
     windowDays: WINDOW,
-    totals: { downloadsMoMPct: moM(totalCur, totalPrev) },
+    totals: {
+      downloadsMoMPct: moM(totalCur, totalPrev),
+      downloads30d: totalCur > 0 ? totalCur : null,
+      impressions30d: totalImpCur > 0 ? totalImpCur : null
+    },
     apps,
     daily: withD.length ? { dates: current, dancelog: (apps.find(a => a.key === 'dancelog') || {}).daily || null, freestyle: (apps.find(a => a.key === 'freestyle') || {}).daily || null } : null,
-    impressions: appResults.some(r => r.impressions) ? { source: 'analytics-reports' } : null
+    impressions: totalImpCur > 0 ? { source: 'analytics-reports', total30d: totalImpCur } : null
   };
 
   const start = '/* ASC-METRICS:START';
