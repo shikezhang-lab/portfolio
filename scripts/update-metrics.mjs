@@ -135,16 +135,16 @@ async function fetchSeries(token, appId, reportMatchers) {
   }
   if (!list.length) return null;
   const request = list[0];
-  const reports = await api(token, `/v1/analyticsReportRequests/${request.id}/reports?pageSize=200`);
+  const reports = await api(token, `/v1/analyticsReportRequests/${request.id}/reports`);
   const names = (reports.data || []).map(r => r.attributes.name);
   console.log(`  app ${appId} reports: [${names.join(' | ')}]`);
   for (const matcher of reportMatchers) {
     const report = (reports.data || []).find(r => matcher.test(r.attributes.name));
     if (!report) continue;
-    const instances = await api(token, `/v1/analyticsReports/${report.id}/instances?pageSize=25`);
+    const instances = await api(token, `/v1/analyticsReports/${report.id}/instances`);
     const instance = (instances.data || []).find(i => i.attributes.granularity === 'DAILY') || (instances.data || [])[0];
     if (!instance) continue;
-    const segments = await api(token, `/v1/analyticsReportInstances/${instance.id}/segments?pageSize=100`);
+    const segments = await api(token, `/v1/analyticsReportInstances/${instance.id}/segments`);
     const rows = [];
     for (const seg of (segments.data || [])) {
       const url = seg.attributes && (seg.attributes.url || seg.attributes.downloadUrl);
