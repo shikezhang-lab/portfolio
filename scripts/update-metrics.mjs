@@ -46,18 +46,41 @@ function signJwt(privatePem) {
   return input + '.' + b64url(sig);
 }
 
-async function api(token, pathName, options = {}) {
-  const res = await fetch(API + pathName, {
-    method: options.method || 'GET',
-    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-    body: options.body ? JSON.stringify(options.body) : undefined
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error('ASC ' + res.status + ' ' + pathName + ' :: ' + text.slice(0, 400));
+function netCause(err) {
+  const parts = [];
+  let c = err;
+  while (c) {
+    parts.push(c.code || c.message || String(c));
+    c = c.cause;
   }
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
+  return parts.join(' <- ');
+}
+
+async function api(token, pathName, options = {}) {
+  let lastErr;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(API + pathName, {
+        method: options.method || 'GET',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: options.body ? JSON.stringify(options.body) : undefined
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error('ASC ' + res.status + ' ' + pathName + ' :: ' + text.slice(0, 400));
+      }
+      const text = await res.text();
+      return text ? JSON.parse(text) : null;
+    } catch (err) {
+      lastErr = err;
+      if (err.message && err.message.startsWith('ASC ')) throw err; // HTTP-level error: no retry
+      if (attempt < 3) {
+        console.log(`  fetch failed (attempt ${attempt}), retrying in ${attempt}s...`);
+        await new Promise(r => setTimeout(r, attempt * 1000));
+      }
+    }
+  }
+  throw new Error('fetch failed after 3 attempts: ' + netCause(lastErr));
 }
 
 function parseCsv(text) {
