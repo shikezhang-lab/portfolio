@@ -142,6 +142,10 @@ async function fetchSeries(token, appId, reportMatchers) {
     const report = (reports.data || []).find(r => matcher.test(r.attributes.name));
     if (!report) continue;
     const instances = await api(token, `/v1/analyticsReports/${report.id}/instances`);
+    if (!instances.data || instances.data.length === 0) {
+      console.log(`  report "${report.attributes.name}" matched, but has no instances yet (Apple generates the first instances within 24-48h of request creation)`);
+      continue;
+    }
     const instance = (instances.data || []).find(i => i.attributes.granularity === 'DAILY') || (instances.data || [])[0];
     if (!instance) continue;
     const segments = await api(token, `/v1/analyticsReportInstances/${instance.id}/segments`);
