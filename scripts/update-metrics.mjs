@@ -112,12 +112,20 @@ async function fetchSeries(token, appId, reportMatchers) {
   let requests = await api(token, `/v1/apps/${appId}/analyticsReportRequests`);
   let list = (requests && requests.data) || [];
   if (list.length === 0) {
+    // Apple moved creation to the top-level endpoint: POST /v1/analyticsReportRequests
+    // with the app passed via relationships (per-app POST now returns 405).
     for (const accessType of ['ONGOING', 'ONE_TIME_SNAPSHOT']) {
       try {
-        console.log(`  creating analyticsReportRequest (${accessType}) for app ${appId}...`);
-        requests = await api(token, `/v1/apps/${appId}/analyticsReportRequests`, {
+        console.log(`  creating analyticsReportRequest (${accessType}) for app ${appId} (top-level endpoint)...`);
+        requests = await api(token, `/v1/analyticsReportRequests`, {
           method: 'POST',
-          body: { data: { type: 'analyticsReportRequests', attributes: { accessType } } }
+          body: {
+            data: {
+              type: 'analyticsReportRequests',
+              attributes: { accessType },
+              relationships: { app: { data: { type: 'apps', id: appId } } }
+            }
+          }
         });
         if (requests && requests.data && requests.data.length) { list = requests.data; break; }
       } catch (e) {
