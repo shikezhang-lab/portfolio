@@ -134,42 +134,46 @@ async function fetchSeries(token, appId, reportMatchers) {
     }
   }
   if (!list.length) return null;
-  const request = list[0];
-  const reports = await api(token, `/v1/analyticsReportRequests/${request.id}/reports`);
-  const names = (reports.data || []).map(r => r.attributes.name);
-  console.log(`  app ${appId} reports: [${names.join(' | ')}]`);
-  for (const matcher of reportMatchers) {
-    const report = (reports.data || []).find(r => matcher.test(r.attributes.name));
-    if (!report) continue;
-    const instances = await api(token, `/v1/analyticsReports/${report.id}/instances`);
-    if (!instances.data || instances.data.length === 0) {
-      console.log(`  report "${report.attributes.name}" matched, but has no instances yet (Apple generates the first instances within 24-48h of request creation)`);
-      continue;
+  console.log(`  app ${appId}: ${list.length} analyticsReportRequest(s) [${list.map(r => r.attributes.accessType + ':' + r.id.slice(0, 8)).join(', ')}]`);
+  for (const request of list) {
+    const reports = await api(token, `/v1/analyticsReportRequests/${request.id}/reports`);
+    const names = (reports.data || []).map(r => r.attributes.name);
+    console.log(`  app ${appId} reports (${request.attributes.accessType}): [${names.join(' | ')}]`);
+    for (const matcher of reportMatchers) {
+      const report = (reports.data || []).find(r => matcher.test(r.attributes.name));
+      if (!report) continue;
+      const instances = await api(token, `/v1/analyticsReports/${report.id}/instances`);
+      const instList = (instances.data || []);
+      if (instList.length === 0) {
+        console.log(`  report "${report.attributes.name}" matched, but has no instances yet (Apple generates the first instances within 24-48h of request creation)`);
+        continue;
+      }
+      console.log(`  report "${report.attributes.name}": ${instList.length} instance(s), granularity [${instList.map(i => i.attributes.granularity).join(', ')}]`);
+      const instance = instList.find(i => i.attributes.granularity === 'DAILY') || instList[0];
+      const segments = await api(token, `/v1/analyticsReportInstances/${instance.id}/segments`);
+      const rows = [];
+      for (const seg of (segments.data || [])) {
+        const url = seg.attributes && (seg.attributes.url || seg.attributes.downloadUrl);
+        if (!url) continue;
+        const res = await fetch(url);
+        if (!res.ok) { console.log(`  segment download failed (${res.status}), skipping`); continue; }
+        rows.push(...parseCsv(await res.text()));
+      }
+      console.log(`  report "${report.attributes.name}": ${segments.data ? segments.data.length : 0} segment(s), ${rows.length} CSV row(s)`);
+      if (rows.length === 0) continue;
+      const header = rows[0].map(h => h.trim().toLowerCase());
+      const dateIdx = header.findIndex(h => h.includes('date'));
+      const valIdx = header.findIndex(h => h.includes('count') || h.includes('downloads') || h.includes('units') || h.includes('impressions') || h.includes('views'));
+      if (dateIdx === -1 || valIdx === -1) { console.log(`  unexpected CSV header: ${rows[0].join(',')}`); continue; }
+      const byDay = new Map();
+      for (const r of rows.slice(1)) {
+        const day = (r[dateIdx] || '').slice(0, 10);
+        const v = parseFloat(r[valIdx]);
+        if (!day || Number.isNaN(v)) continue;
+        byDay.set(day, (byDay.get(day) || 0) + v);
+      }
+      return { reportName: report.attributes.name, byDay };
     }
-    const instance = (instances.data || []).find(i => i.attributes.granularity === 'DAILY') || (instances.data || [])[0];
-    if (!instance) continue;
-    const segments = await api(token, `/v1/analyticsReportInstances/${instance.id}/segments`);
-    const rows = [];
-    for (const seg of (segments.data || [])) {
-      const url = seg.attributes && (seg.attributes.url || seg.attributes.downloadUrl);
-      if (!url) continue;
-      const res = await fetch(url);
-      if (!res.ok) { console.log(`  segment download failed (${res.status}), skipping`); continue; }
-      rows.push(...parseCsv(await res.text()));
-    }
-    if (rows.length === 0) continue;
-    const header = rows[0].map(h => h.trim().toLowerCase());
-    const dateIdx = header.findIndex(h => h.includes('date'));
-    const valIdx = header.findIndex(h => h.includes('count') || h.includes('downloads') || h.includes('units') || h.includes('impressions') || h.includes('views'));
-    if (dateIdx === -1 || valIdx === -1) { console.log(`  unexpected CSV header: ${rows[0].join(',')}`); continue; }
-    const byDay = new Map();
-    for (const r of rows.slice(1)) {
-      const day = (r[dateIdx] || '').slice(0, 10);
-      const v = parseFloat(r[valIdx]);
-      if (!day || Number.isNaN(v)) continue;
-      byDay.set(day, (byDay.get(day) || 0) + v);
-    }
-    return { reportName: report.attributes.name, byDay };
   }
   return null;
 }
