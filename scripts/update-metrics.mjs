@@ -218,7 +218,9 @@ async function main() {
     console.log('App ' + appId + ':');
     try {
       const downloads = await fetchSeries(token, appId, [/download/i, /units/i, /^app downloads/i]);
-      const impressions = await fetchSeries(token, appId, [/impression/i]);
+      // Impressions live inside "App Store Discovery and Engagement Standard" — the
+      // report NAME does not contain "impression", so we match by report name, not by metric.
+      const impressions = await fetchSeries(token, appId, [/app store discovery and engagement standard/i, /app store discovery and engagement/i]);
       appResults.push({ appId, downloads, impressions });
     } catch (err) {
       console.log('  ERROR: ' + err.message);
