@@ -275,7 +275,9 @@ async function main() {
   if (s === -1 || e === -1) { console.error('ASC-METRICS markers not found in index.html'); process.exit(1); }
   const block = start + ' (auto-updated by GitHub Action — do not edit by hand) */\n'
     + '      const ASC_METRICS = ' + JSON.stringify(metrics, null, 8).replace(/\n/g, '\n      ') + ';\n'
-    + '      ' + end;
+    // The closing marker MUST be wrapped in its own comment — a bare "ASC-METRICS:END */"
+    // is parsed as JS (ASC - METRICS : END) and throws SyntaxError, killing the whole script.
+    + '      /* ' + end;
   fs.writeFileSync(INDEX, html.slice(0, s) + block + html.slice(e + end.length));
   console.log('index.html ASC-METRICS block updated: ' + JSON.stringify(metrics.totals) + ' apps=' + apps.length);
 }
