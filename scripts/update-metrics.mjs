@@ -18,7 +18,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const API = 'https://api.appstoreconnect.apple.com';
 const APP_IDS = (process.env.ASC_APP_IDS || '6796975099,6795164130').split(',').map(s => s.trim()).filter(Boolean);
@@ -85,11 +85,16 @@ async function api(token, pathName, options = {}) {
 }
 
 function parseCsv(text) {
+  // Apple analytics CSVs are TAB-delimited; sniff the delimiter from the header
+  // line (parsing a tab file as comma-separated collapses each row into ONE
+  // column, which made parseFloat read the year "2026" out of the date field).
+  const firstLine = text.split(/\r?\n/, 1)[0] || '';
+  const delim = firstLine.includes('\t') ? '\t' : ',';
   return text.split(/\r?\n/).filter(Boolean).map(line => {
     const out = []; let cur = '', q = false;
     for (const ch of line) {
       if (ch === '"') q = !q;
-      else if (ch === ',' && !q) { out.push(cur); cur = ''; }
+      else if (ch === delim && !q) { out.push(cur); cur = ''; }
       else cur += ch;
     }
     out.push(cur);
@@ -227,13 +232,21 @@ async function main() {
     }
   }
 
-  const nameFor = { '6796975099': 'freestyle', '6795164130': 'dancelog' };
+  const fallbackFor = { '6796975099': 'freestyle', '6795164130': 'dancelog' };
+  // Prefer the real App Name reported inside the CSV over any hardcoded guess.
+  const keyFor = (appId, csvNames) => {
+    const n = (csvNames || []).join(' ').toLowerCase();
+    if (/dance/.test(n)) return 'dancelog';
+    if (/free|challenge/.test(n)) return 'freestyle';
+    return fallbackFor[appId] || ('app-' + appId);
+  };
   const apps = appResults.map(({ appId, downloads, impressions }) => {
+    const csvNames = (downloads && downloads.appNames) || (impressions && impressions.appNames) || [];
     const curD = downloads ? sumWindow(downloads.byDay, current) : null;
     const prevD = downloads ? sumWindow(downloads.byDay, previous) : null;
     const curI = impressions ? sumWindow(impressions.byDay, current) : null;
     return {
-      key: nameFor[appId] || ('app-' + appId),
+      key: keyFor(appId, csvNames),
       appleId: appId,
       downloadsMoMPct: downloads ? moM(curD, prevD) : null,
       sharePct: null,
@@ -282,4 +295,9 @@ async function main() {
   console.log('index.html ASC-METRICS block updated: ' + JSON.stringify(metrics.totals) + ' apps=' + apps.length);
 }
 
-main().catch((err) => { console.error('FATAL: ' + err.message); process.exit(1); });
+// Only run when executed directly (node scripts/update-metrics.mjs); when
+// imported (e.g. by tests) just expose the pure helpers.
+export { parseCsv, sumWindow, buildWindow, moM };
+if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
+  main().catch((err) => { console.error('FATAL: ' + err.message); process.exit(1); });
+}
