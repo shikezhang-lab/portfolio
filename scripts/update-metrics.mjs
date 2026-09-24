@@ -8,7 +8,14 @@
  *   ASC_KEY_ID       – App Store Connect API Key ID
  *   ASC_PRIVATE_KEY  – Contents of the .p8 file (\n escapes are fine)
  * Optional env:
- *   ASC_APP_IDS      – comma-separated Apple IDs (default: 6796975099,6795164130)
+ *   ASC_APP_IDS       – comma-separated Apple IDs (default: 6796975099,6795164130)
+ *   ASC_VENDOR_NUMBER – vendor number (8 digits, shown in Agreements, Tax and
+ *                       Banking). When set, downloads come from Sales &
+ *                       Trends DAILY reports — the SAME source as the
+ *                       "App 销量" card in the ASC backend. Without it the
+ *                       script falls back to Analytics "App Downloads",
+ *                       which uses a different metric definition and does
+ *                       NOT match the backend (observed 4 vs 26).
  *
  * Run `node scripts/update-metrics.mjs --selftest` to verify JWT signing
  * with a locally generated key (no network, no secrets needed).
@@ -197,6 +204,127 @@ function moM(current, previous) {
   return Math.round(((current - previous) / previous) * 100);
 }
 
+/** 60-day window (oldest -> newest) ending at `latest` (inclusive). */
+function windowEndingAt(latest) {
+  const end = new Date(latest + 'T00:00:00Z');
+  const dates = [];
+  for (let i = 59; i >= 0; i--) {
+    const d = new Date(end); d.setUTCDate(d.getUTCDate() - i);
+    dates.push(dayKey(d));
+  }
+  return dates;
+}
+
+/**
+ * Sum Units per Apple Identifier from a parsed Sales & Trends TSV.
+ * Only app purchases count ("App 销量"): Product Type Identifiers starting
+ * with "1" (1T paid / 1F free). Updates (7*) and other line items are
+ * excluded — exactly what the ASC backend card shows.
+ */
+function unitsFromSalesRows(rows) {
+  const out = new Map(); // appleId -> { units, title }
+  if (!rows || rows.length === 0) return out;
+  const header = rows[0].map(h => h.trim().toLowerCase());
+  const idIdx = header.findIndex(h => h.includes('apple identifier'));
+  const unitsIdx = header.findIndex(h => h.includes('units'));
+  const typeIdx = header.findIndex(h => h.includes('product type'));
+  const titleIdx = header.findIndex(h => h.includes('title'));
+  if (idIdx === -1 || unitsIdx === -1) {
+    throw new Error('unexpected sales report header: ' + rows[0].join('|').slice(0, 200));
+  }
+  for (const r of rows.slice(1)) {
+    const type = typeIdx !== -1 ? (r[typeIdx] || '').trim() : '1';
+    if (!/^1/.test(type)) continue; // app units only; skip updates (7*) etc.
+    const id = (r[idIdx] || '').trim();
+    const u = parseFloat(r[unitsIdx]);
+    if (!id || Number.isNaN(u)) continue;
+    const rec = out.get(id) || { units: 0, title: titleIdx !== -1 ? r[titleIdx] : '' };
+    rec.units += u;
+    if (titleIdx !== -1 && r[titleIdx]) rec.title = r[titleIdx];
+    out.set(id, rec);
+  }
+  return out;
+}
+
+/**
+ * Download one Sales & Trends DAILY report (returns parsed CSV rows),
+ * or null when the report is not available for that date yet (Apple
+ * generates daily sales reports with a ~1-2 day lag; days without any
+ * sale may have no file at all).
+ */
+async function fetchSalesDaily(token, vendorNumber, date) {
+  const qs = '/v1/salesReports?filter[reportType]=SALES&filter[reportSubType]=SUMMARY'
+    + '&filter[frequency]=DAILY&filter[reportDate]=' + date
+    + '&filter[vendorNumber]=' + encodeURIComponent(vendorNumber);
+  let res;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      res = await fetch(API + qs, { headers: { Authorization: 'Bearer ' + token } });
+      break;
+    } catch (err) {
+      if (attempt < 3) { console.log(`  sales fetch failed (attempt ${attempt}), retrying...`); await sleep(attempt * 1000); }
+      else throw new Error('salesReports fetch failed: ' + netCause(err));
+    }
+  }
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    if (res.status === 403) {
+      throw new Error('salesReports 403 (check: Paid Applications agreement accepted; API key has Finance/Admin role) :: ' + text.slice(0, 200));
+    }
+    throw new Error('ASC ' + res.status + ' salesReports ' + date + ' :: ' + text.slice(0, 200));
+  }
+  const buf = Buffer.from(await res.arrayBuffer());
+  const isGzip = buf[0] === 0x1f && buf[1] === 0x8b;
+  const text = isGzip ? zlib.gunzipSync(buf).toString('utf8') : buf.toString('utf8');
+  return parseCsv(text);
+}
+
+/**
+ * Sales & Trends downloads: returns { latest, byApp } where byApp maps
+ * appleId -> { byDay: Map(day -> units), title } over the 60-day window
+ * ending at the latest available report date (same ending date as the
+ * "App 销量" card in the ASC backend).
+ */
+async function fetchSalesUnits(token, vendorNumber) {
+  let latest = null;
+  for (let i = 1; i <= 10 && !latest; i++) {
+    const d = new Date(); d.setUTCDate(d.getUTCDate() - i);
+    const date = dayKey(d);
+    try {
+      if (await fetchSalesDaily(token, vendorNumber, date)) latest = date;
+    } catch (err) {
+      if (String(err.message).includes('403')) throw err;
+      console.log('  sales scan ' + date + ': ' + err.message.slice(0, 120));
+    }
+  }
+  if (!latest) return null;
+  console.log('  sales: latest available DAILY report = ' + latest);
+  const dates = windowEndingAt(latest);
+  const byApp = new Map();
+  for (const date of dates) {
+    let csv;
+    try { csv = await fetchSalesDaily(token, vendorNumber, date); }
+    catch (err) { console.log('  sales ' + date + ': ' + err.message.slice(0, 160)); continue; }
+    if (!csv) continue; // no file that day == no units that day
+    let units;
+    try { units = unitsFromSalesRows(csv); }
+    catch (err) { console.log('  sales ' + date + ': ' + err.message); continue; }
+    for (const [appId, rec] of units) {
+      if (!APP_IDS.includes(appId)) continue;
+      const entry = byApp.get(appId) || { byDay: new Map(), title: rec.title };
+      entry.byDay.set(date, (entry.byDay.get(date) || 0) + rec.units);
+      if (rec.title) entry.title = rec.title;
+      byApp.set(appId, entry);
+    }
+  }
+  for (const [appId, entry] of byApp) {
+    const cur = sumWindow(entry.byDay, dates.slice(30));
+    console.log('  sales app ' + appId + ' (' + entry.title + '): last-30d units = ' + cur);
+  }
+  return { latest, dates, byApp };
+}
+
 async function main() {
   if (process.argv.includes('--selftest')) {
     const { publicKey, privateKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
@@ -214,15 +342,42 @@ async function main() {
   }
 
   const token = signJwt(loadPrivateKey());
-  const dates = buildWindow();
-  const current = dates.slice(0, WINDOW);
-  const previous = dates.slice(WINDOW);
+  const vendorNumber = (process.env.ASC_VENDOR_NUMBER || '').trim();
+
+  // Downloads from Sales & Trends (the SAME source as the ASC "App 销量"
+  // card) whenever a vendor number is configured; the window ends at the
+  // latest available daily report so the dates match the backend card.
+  // Analytics "App Downloads" uses a different metric definition and does
+  // NOT match the backend (observed 4 vs 26 for the same period).
+  const sales = vendorNumber ? await fetchSalesUnits(token, vendorNumber) : null;
+  if (vendorNumber && !sales) {
+    console.log('  ASC_VENDOR_NUMBER set but no sales reports found — falling back to Analytics "App Downloads".');
+  }
+  if (!vendorNumber) {
+    console.log('  ASC_VENDOR_NUMBER not set — using Analytics "App Downloads" (does NOT match the ASC backend "App 销量" card).');
+  }
+
+  const dates = sales ? sales.dates : buildWindow();
+  // dates is built oldest -> newest, so the CURRENT window is the LAST 30
+  // entries (most recent 30 days); the first 30 are the previous window.
+  const current = dates.slice(WINDOW);
+  const previous = dates.slice(0, WINDOW);
 
   const appResults = [];
   for (const appId of APP_IDS) {
     console.log('App ' + appId + ':');
     try {
-      const downloads = await fetchSeries(token, appId, [/download/i, /units/i, /^app downloads/i]);
+      let downloads;
+      if (sales) {
+        const entry = sales.byApp.get(appId);
+        downloads = {
+          reportName: 'Sales & Trends DAILY (App units)',
+          byDay: entry ? entry.byDay : new Map(),
+          appNames: entry && entry.title ? [entry.title] : []
+        };
+      } else {
+        downloads = await fetchSeries(token, appId, [/download/i, /units/i, /^app downloads/i]);
+      }
       // Impressions live inside "App Store Discovery and Engagement Standard" — the
       // report NAME does not contain "impression", so we match by report name, not by metric.
       const impressions = await fetchSeries(token, appId, [/app store discovery and engagement standard/i, /app store discovery and engagement/i]);
@@ -268,7 +423,10 @@ async function main() {
   const totalImpCur = withI.reduce((s, a) => s + a.impressions30d, 0);
 
   const metrics = {
-    updatedAt: dayKey(new Date()),
+    // With Sales & Trends the numbers are only complete up to the latest
+    // available daily report — stamp that date so it matches the ASC card.
+    updatedAt: sales ? sales.latest : dayKey(new Date()),
+    source: sales ? 'sales-and-trends' : 'analytics-reports',
     windowDays: WINDOW,
     totals: {
       downloadsMoMPct: moM(totalCur, totalPrev),
@@ -297,7 +455,7 @@ async function main() {
 
 // Only run when executed directly (node scripts/update-metrics.mjs); when
 // imported (e.g. by tests) just expose the pure helpers.
-export { parseCsv, sumWindow, buildWindow, moM };
+export { parseCsv, sumWindow, buildWindow, moM, windowEndingAt, unitsFromSalesRows };
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   main().catch((err) => { console.error('FATAL: ' + err.message); process.exit(1); });
 }

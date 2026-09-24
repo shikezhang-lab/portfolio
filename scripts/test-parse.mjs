@@ -5,7 +5,7 @@
 // parseFloat read the year "2026" out of the date field (site showed 8,104
 // downloads = 2026 x 4 rows, 160,054 impressions = 2026 x 79 rows).
 
-import { parseCsv, sumWindow, buildWindow } from './update-metrics.mjs';
+import { parseCsv, sumWindow, buildWindow, unitsFromSalesRows, windowEndingAt } from './update-metrics.mjs';
 
 let failed = 0;
 function check(name, cond, extra = '') {
@@ -55,5 +55,25 @@ check('comma CSV still parses', h2.length === 3 && r2[1][v2] === '510', 'got ' +
 // 3) Window direction: buildWindow oldest -> newest
 check('buildWindow is oldest -> newest', dates[0] < dates[dates.length - 1],
   dates[0] + ' vs ' + dates[dates.length - 1]);
+
+// 4) Sales & Trends TSV: sum Units per Apple Identifier, app purchases only
+//    (Product Type Identifier starting with "1"); updates (7*) excluded.
+const sales = [
+  'Provider\tProvider Country\tSKU\tDeveloper\tTitle\tVersion\tProduct Type Identifier\tUnits\tDeveloper Proceed\tApple Identifier',
+  ' COMPANY\tUS\tDL001\tcoco\tDance Log\t1.2\t1F\t11\t0.00\t6795164130',
+  ' COMPANY\tCN\tDL001\tcoco\tDance Log\t1.2\t1F\t12\t0.00\t6795164130',
+  ' COMPANY\tUS\tFDC1\tcoco\tFreestyle Dance Challenge\t1.0\t1T\t3\t0.00\t6796975099',
+  ' COMPANY\tUS\tFDC1\tcoco\tFreestyle Dance Challenge\t1.0\t7\t99\t0.00\t6796975099'
+].join('\n');
+const units = unitsFromSalesRows(parseCsv(sales));
+check('sales: Dance Log units = 23', units.get('6795164130')?.units === 23, JSON.stringify([...units]));
+check('sales: Freestyle units = 3 (update rows excluded)', units.get('6796975099')?.units === 3, JSON.stringify([...units]));
+check('sales: title captured for key mapping', /dance/i.test(units.get('6795164130')?.title || ''), units.get('6795164130')?.title);
+
+// 5) windowEndingAt: 60 days ending at `latest`, oldest -> newest
+const w = windowEndingAt('2026-09-22');
+check('windowEndingAt length 60', w.length === 60, 'got ' + w.length);
+check('windowEndingAt ends at latest, oldest-first', w[59] === '2026-09-22' && w[0] === '2026-07-25',
+  w[0] + ' .. ' + w[59]);
 
 process.exit(failed);
