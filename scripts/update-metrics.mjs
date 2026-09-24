@@ -17,6 +17,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 
 const API = 'https://api.appstoreconnect.apple.com';
@@ -157,7 +158,11 @@ async function fetchSeries(token, appId, reportMatchers) {
         if (!url) continue;
         const res = await fetch(url);
         if (!res.ok) { console.log(`  segment download failed (${res.status}), skipping`); continue; }
-        rows.push(...parseCsv(await res.text()));
+        const buf = Buffer.from(await res.arrayBuffer());
+        const isGzip = buf[0] === 0x1f && buf[1] === 0x8b;
+        const text = isGzip ? zlib.gunzipSync(buf).toString('utf8') : buf.toString('utf8');
+        if (isGzip) console.log('  decoded gzip segment, header: ' + text.split('\n')[0].slice(0, 70));
+        rows.push(...parseCsv(text));
       }
       console.log(`  report "${report.attributes.name}": ${segments.data ? segments.data.length : 0} segment(s), ${rows.length} CSV row(s)`);
       if (rows.length === 0) continue;
