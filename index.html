@@ -2403,22 +2403,23 @@
         const m = ASC_METRICS;
         if (!m) return;
         const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+        const pct = (v) => (v > 0 ? '+' : '') + v + '%';
         if (m.updatedAt) set('traction-updated', m.updatedAt);
-        if (m.totals && typeof m.totals.downloadsMoMPct === 'number') set('kpi-growth', '+' + m.totals.downloadsMoMPct + '%');
+        if (m.totals && typeof m.totals.downloadsMoMPct === 'number') set('kpi-growth', pct(m.totals.downloadsMoMPct));
         if (m.totals && typeof m.totals.downloads30d === 'number') set('traction-abs', m.totals.downloads30d.toLocaleString());
         else set('traction-abs', '—');
         const apps = m.apps || [];
         const byKey = (key) => apps.find((a) => a.key === key);
         const dancelog = byKey('dancelog');
         if (dancelog && typeof dancelog.sharePct === 'number') set('kpi-share', dancelog.sharePct + '%');
-        if (dancelog && typeof dancelog.downloadsMoMPct === 'number') set('kpi-dancelog', '+' + dancelog.downloadsMoMPct + '%');
+        if (dancelog && typeof dancelog.downloadsMoMPct === 'number') set('kpi-dancelog', pct(dancelog.downloadsMoMPct));
         document.querySelectorAll('[data-traction]').forEach((el) => {
           const app = byKey(el.dataset.traction);
           if (!app) return;
           if (typeof app.downloadsMoMPct === 'number') {
             el.innerHTML = '';
             const strong = document.createElement('strong');
-            strong.textContent = '+' + app.downloadsMoMPct + '%';
+            strong.textContent = pct(app.downloadsMoMPct);
             el.appendChild(strong);
             el.appendChild(document.createTextNode(' downloads · MoM'));
           } else {
