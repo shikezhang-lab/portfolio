@@ -12,3 +12,6 @@ HANDOFF.md
 
 # Internal working outputs
 outputs/
+
+# Internal code-review reports (share by hand, not via the public repo)
+REVIEW_*.md
