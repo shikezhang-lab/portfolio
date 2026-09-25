@@ -7,7 +7,7 @@
 
 import {
   parseCsv, sumWindow, buildWindow, unitsFromSalesRows, windowEndingAt,
-  appKeyFor, uniqueAppKeys, buildDailySeries
+  appKeyFor, uniqueAppKeys, buildDailySeries, seriesFromAnalyticsRows
 } from './update-metrics.mjs';
 
 let failed = 0;
@@ -132,5 +132,47 @@ check('daily series: empty array is not a series',
 check('daily series: partially-empty values still render',
   (buildDailySeries(['2026-09-22'], [{ key: 'x', name: 'X', daily: [0, 0] }]) || {}).series?.length === 1,
   JSON.stringify(buildDailySeries(['2026-09-22'], [{ key: 'x', name: 'X', daily: [0, 0] }])));
+
+// 9) Analytics rows -> daily series. The value column must never be the date
+// column, and impressions must not be inflated by other event kinds sharing
+// the same numeric column.
+const disc = (rows) => parseCsv([
+  'Date\tApp Name\tApp Apple Identifier\tEvent\tPage Type\tSource Type\tCounts',
+  ...rows
+].join('\n'));
+
+const mixed = seriesFromAnalyticsRows(disc([
+  '2026-09-22\tDance Log\t6795164130\tImpression\tApp Store\tSearch\t60',
+  '2026-09-22\tDance Log\t6795164130\tImpression\tApp Store\tBrowse\t40',
+  '2026-09-22\tDance Log\t6795164130\tPage view\tApp Store\tSearch\t299'
+]), 'impressions');
+check('analytics: impressions keep impression rows only (100, not 399)',
+  mixed && mixed.byDay.get('2026-09-22') === 100, JSON.stringify(mixed && [...mixed.byDay]));
+check('analytics: reports which column was summed',
+  mixed && /counts/i.test(mixed.valueCol) && /date/i.test(mixed.dateCol),
+  JSON.stringify([mixed && mixed.dateCol, mixed && mixed.valueCol]));
+check('analytics: value column is not the date column',
+  mixed && mixed.byDay.get('2026-09-22') !== 2026, String(mixed && mixed.byDay.get('2026-09-22')));
+
+// Unknown event labels must fall back to all rows rather than fabricate a zero.
+const oddEvents = seriesFromAnalyticsRows(disc([
+  '2026-09-22\tDance Log\t6795164130\tProduct page view\tApp Store\tSearch\t17'
+]), 'impressions');
+check('analytics: unknown event label falls back instead of zeroing',
+  oddEvents && oddEvents.byDay.get('2026-09-22') === 17 && oddEvents.filteredByEvent === false,
+  JSON.stringify([oddEvents && [...oddEvents.byDay], oddEvents && oddEvents.filteredByEvent]));
+
+// Download reports must never be event-filtered.
+const dl = parseCsv([
+  'Date\tApp Name\tApp Apple Identifier\tDownload Type\tCounts',
+  '2026-09-22\tDance Log\t6795164130\tFirst-time download\t7'
+].join('\n'));
+const dlSeries = seriesFromAnalyticsRows(dl, 'downloads');
+check('analytics: download rows are not event-filtered',
+  dlSeries && dlSeries.byDay.get('2026-09-22') === 7 && dlSeries.filteredByEvent === false,
+  JSON.stringify(dlSeries && [...dlSeries.byDay]));
+
+check('analytics: no date column -> no series, never a guess',
+  seriesFromAnalyticsRows(parseCsv('Foo\tBar\n1\t2')) === null);
 
 process.exit(failed);

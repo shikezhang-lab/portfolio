@@ -31,7 +31,11 @@ const API = 'https://api.appstoreconnect.apple.com';
 const APP_IDS = (process.env.ASC_APP_IDS || '6796975099,6795164130').split(',').map(s => s.trim()).filter(Boolean);
 const WINDOW = 30; // days
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const INDEX = path.join(ROOT, 'index.html');
+// Overridable so the end-to-end smoke test (scripts/test-pipeline.mjs) can run
+// main() against a throwaway copy instead of the real index.html.
+const INDEX = process.env.ASC_INDEX_FILE
+  ? path.resolve(process.env.ASC_INDEX_FILE)
+  : path.join(ROOT, 'index.html');
 
 const b64url = (buf) => Buffer.from(buf).toString('base64url');
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -121,7 +125,7 @@ function buildWindow(now = new Date()) {
 }
 
 /** Fetch one metric series (daily values) for one app via Analytics Reports (STANDALONE). */
-async function fetchSeries(token, appId, reportMatchers) {
+async function fetchSeries(token, appId, reportMatchers, metric = 'downloads') {
   let requests = await api(token, `/v1/apps/${appId}/analyticsReportRequests`);
   let list = (requests && requests.data) || [];
   if (list.length === 0) {
@@ -173,26 +177,91 @@ async function fetchSeries(token, appId, reportMatchers) {
         const buf = Buffer.from(await res.arrayBuffer());
         const isGzip = buf[0] === 0x1f && buf[1] === 0x8b;
         const text = isGzip ? zlib.gunzipSync(buf).toString('utf8') : buf.toString('utf8');
-        if (isGzip) console.log('  decoded gzip segment, header: ' + text.split('\n')[0].slice(0, 70));
+        if (isGzip) console.log('  decoded gzip segment, header: ' + text.split(/\r?\n/)[0]);
         rows.push(...parseCsv(text));
       }
       console.log(`  report "${report.attributes.name}": ${segments.data ? segments.data.length : 0} segment(s), ${rows.length} CSV row(s)`);
       if (rows.length === 0) continue;
-      const header = rows[0].map(h => h.trim().toLowerCase());
-      const dateIdx = header.findIndex(h => h.includes('date'));
-      const valIdx = header.findIndex(h => h.includes('count') || h.includes('downloads') || h.includes('units') || h.includes('impressions') || h.includes('views'));
-      if (dateIdx === -1 || valIdx === -1) { console.log(`  unexpected CSV header: ${rows[0].join(',')}`); continue; }
-      const byDay = new Map();
-      for (const r of rows.slice(1)) {
-        const day = (r[dateIdx] || '').slice(0, 10);
-        const v = parseFloat(r[valIdx]);
-        if (!day || Number.isNaN(v)) continue;
-        byDay.set(day, (byDay.get(day) || 0) + v);
-      }
-      return { reportName: report.attributes.name, byDay };
+      // Full header, untruncated — the column names are the only way to tell
+      // from a workflow log which metric was actually summed.
+      console.log('  header: ' + rows[0].map(h => h.trim()).join(' | '));
+      const parsed = seriesFromAnalyticsRows(rows, metric);
+      if (!parsed) { console.log('  unexpected CSV header — no usable date/value column pair'); continue; }
+      console.log(`  parsed ${metric}: date col "${parsed.dateCol}", value col "${parsed.valueCol}"`
+        + (parsed.filteredByEvent ? `, impression rows kept out of [${parsed.events.join(', ').slice(0, 120)}]` : '')
+        + ` -> ${parsed.byDay.size} day(s)`);
+      return { reportName: report.attributes.name, byDay: parsed.byDay };
     }
   }
   return null;
+}
+
+/**
+ * Turn an Analytics report CSV into a daily series.
+ *
+ * Two correctness rules live here, both learned the hard way:
+ *  1. The value column must NEVER be allowed to be the date column. A
+ *     separator mismatch once collapsed every row into a single field, so the
+ *     date index and the value index both resolved to 0 and
+ *     parseFloat("2026-08-23…") returned the YEAR: the site showed
+ *     8,104 downloads, which was literally 2026 × 4 CSV rows.
+ *  2. For impressions the report carries an Event column and uses one numeric
+ *     column for every event kind (imprints / page views / taps). Summing all
+ *     rows would inflate the figure, so when an Event column is present we keep
+ *     impression rows only. Download reports are never event-filtered.
+ */
+function seriesFromAnalyticsRows(rows, metric = 'downloads') {
+  if (!rows || rows.length === 0) return null;
+  const header = rows[0].map(h => h.trim().toLowerCase());
+  const dateIdx = header.findIndex(h => h.includes('date'));
+  if (dateIdx === -1) return null;
+
+  const preference = metric === 'impressions'
+    ? ['impressions', 'impression', 'counts', 'count', 'views']
+    : ['downloads', 'units', 'counts', 'count'];
+  let valIdx = -1;
+  for (const p of preference) {
+    const i = header.findIndex((h, idx) => idx !== dateIdx && h.includes(p));
+    if (i !== -1) { valIdx = i; break; }
+  }
+  if (valIdx === -1) return null;
+
+  const eventIdx = header.findIndex(h => h.includes('event'));
+  const useEventFilter = metric === 'impressions' && eventIdx !== -1;
+  const events = new Set();
+  const sum = (filterByEvent) => {
+    const byDay = new Map();
+    for (const r of rows.slice(1)) {
+      const ev = eventIdx === -1 ? '' : (r[eventIdx] || '').trim();
+      if (ev) events.add(ev);
+      if (filterByEvent && !/impression/i.test(ev)) continue;
+      const day = (r[dateIdx] || '').trim().slice(0, 10);
+      const v = parseFloat(r[valIdx]);
+      if (!day || Number.isNaN(v)) continue;
+      byDay.set(day, (byDay.get(day) || 0) + v);
+    }
+    return byDay;
+  };
+  let byDay = sum(useEventFilter);
+  // Safety net: if the event label is not what we expect, the filtered series is
+  // empty while the unfiltered one is not. Always prefer a real (if slightly
+  // over-counted) number over a fabricated zero, and say so in the log.
+  let filteredByEvent = useEventFilter;
+  if (useEventFilter && byDay.size === 0) {
+    const unfiltered = sum(false);
+    if (unfiltered.size > 0) {
+      byDay = unfiltered;
+      filteredByEvent = false;
+      console.log('  note: no event matched /impression/i — using all rows; check the Event column values above');
+    }
+  }
+  return {
+    byDay,
+    dateCol: rows[0][dateIdx].trim(),
+    valueCol: rows[0][valIdx].trim(),
+    events: [...events],
+    filteredByEvent
+  };
 }
 
 function sumWindow(byDay, dates) {
@@ -456,11 +525,11 @@ async function main() {
           appNames: entry && entry.title ? [entry.title] : []
         };
       } else {
-        downloads = await fetchSeries(token, appId, [/download/i, /units/i, /^app downloads/i]);
+        downloads = await fetchSeries(token, appId, [/download/i, /units/i, /^app downloads/i], 'downloads');
       }
       // Impressions live inside "App Store Discovery and Engagement Standard" — the
       // report NAME does not contain "impression", so we match by report name, not by metric.
-      const impressions = await fetchSeries(token, appId, [/app store discovery and engagement standard/i, /app store discovery and engagement/i]);
+      const impressions = await fetchSeries(token, appId, [/app store discovery and engagement standard/i, /app store discovery and engagement/i], 'impressions');
       appResults.push({ appId, downloads, impressions });
     } catch (err) {
       console.log('  ERROR: ' + err.message);
@@ -527,7 +596,9 @@ async function main() {
       impressions30d: totalImpCur > 0 ? totalImpCur : null
     },
     apps,
-    daily: withD.length ? { dates: current, dancelog: (apps.find(a => a.key === 'dancelog') || {}).daily || null, freestyle: (apps.find(a => a.key === 'freestyle') || {}).daily || null } : null,
+    // Built from the app list (never hardcoded keys) so a key remap or a third
+    // app can no longer produce a null series / a silently missing line.
+    daily: buildDailySeries(current, apps),
     impressions: totalImpCur > 0 ? { source: 'analytics-reports', total30d: totalImpCur } : null
   };
 
@@ -550,7 +621,7 @@ async function main() {
 // imported (e.g. by tests) just expose the pure helpers.
 export {
   parseCsv, sumWindow, buildWindow, moM, windowEndingAt, unitsFromSalesRows,
-  appKeyFor, uniqueAppKeys, buildDailySeries
+  appKeyFor, uniqueAppKeys, buildDailySeries, seriesFromAnalyticsRows, main
 };
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   main().catch((err) => { console.error('FATAL: ' + err.message); process.exit(1); });
