@@ -2375,14 +2375,17 @@
         const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
         const pct = (v) => (v > 0 ? '+' : '') + v + '%';
         if (m.updatedAt) set('traction-updated', m.updatedAt);
+        // Never leave a hardcoded placeholder ("+733%") on the page when the
+        // sync has no number to show — a stale fake figure is worse than "—".
         if (m.totals && typeof m.totals.downloadsMoMPct === 'number') set('kpi-growth', pct(m.totals.downloadsMoMPct));
+        else set('kpi-growth', '—');
         if (m.totals && typeof m.totals.downloads30d === 'number') set('traction-abs', m.totals.downloads30d.toLocaleString());
         else set('traction-abs', '—');
         const apps = m.apps || [];
         const byKey = (key) => apps.find((a) => a.key === key);
         const dancelog = byKey('dancelog');
-        if (dancelog && typeof dancelog.sharePct === 'number') set('kpi-share', dancelog.sharePct + '%');
-        if (dancelog && typeof dancelog.downloadsMoMPct === 'number') set('kpi-dancelog', pct(dancelog.downloadsMoMPct));
+        set('kpi-share', dancelog && typeof dancelog.sharePct === 'number' ? dancelog.sharePct + '%' : '—');
+        set('kpi-dancelog', dancelog && typeof dancelog.downloadsMoMPct === 'number' ? pct(dancelog.downloadsMoMPct) : '—');
         document.querySelectorAll('[data-traction]').forEach((el) => {
           const app = byKey(el.dataset.traction);
           if (!app) return;
@@ -2397,46 +2400,85 @@
           }
         });
         const APP_NAMES = { dancelog: 'DanceLog', freestyle: 'Freestyle Challenge' };
+        const labelFor = (a) => a.name || APP_NAMES[a.key] || a.key;
+        // A duplicate key means the sync mapped two apps to the same identity —
+        // it used to be invisible (rows silently shared a label, the chart lost
+        // a series). Surface it instead of hiding it.
+        const seenKeys = Object.create(null);
+        apps.forEach((a) => {
+          if (seenKeys[a.key]) console.warn('[traction] duplicate app key in ASC_METRICS: ' + a.key);
+          seenKeys[a.key] = true;
+        });
+        const cell = (text) => { const td = document.createElement('td'); td.textContent = text; return td; };
+        const fmt = (n) => (typeof n === 'number' ? n.toLocaleString() : '—');
+        const conv = (d, i) => (typeof d === 'number' && typeof i === 'number' && i > 0 ? (Math.round((d / i) * 1000) / 10) + '%' : '—');
         const rawBody = document.getElementById('traction-raw-body');
         if (rawBody) {
-          rawBody.innerHTML = '';
-          const fmt = (n) => (typeof n === 'number' ? n.toLocaleString() : '—');
-          const conv = (d, i) => (typeof d === 'number' && typeof i === 'number' && i > 0 ? (Math.round((d / i) * 1000) / 10) + '%' : '—');
+          rawBody.textContent = '';
           let totalD = 0, totalI = 0, hasD = false, hasI = false;
           apps.forEach((a) => {
             if (typeof a.downloads30d === 'number') { totalD += a.downloads30d; hasD = true; }
             if (typeof a.impressions30d === 'number') { totalI += a.impressions30d; hasI = true; }
             const tr = document.createElement('tr');
-            tr.innerHTML = '<td>' + (a.name || APP_NAMES[a.key] || a.key) + '</td><td>' + fmt(a.downloads30d) + '</td><td>' + fmt(a.impressions30d) + '</td><td>' + conv(a.downloads30d, a.impressions30d) + '</td>';
+            tr.appendChild(cell(labelFor(a)));
+            tr.appendChild(cell(fmt(a.downloads30d)));
+            tr.appendChild(cell(fmt(a.impressions30d)));
+            tr.appendChild(cell(conv(a.downloads30d, a.impressions30d)));
             rawBody.appendChild(tr);
           });
           const trt = document.createElement('tr');
           trt.className = 'raw-total';
-          trt.innerHTML = '<td>Combined</td><td>' + (hasD ? fmt(totalD) : '—') + '</td><td>' + (hasI ? fmt(totalI) : '—') + '</td><td>' + (hasD && hasI ? conv(totalD, totalI) : '—') + '</td>';
+          trt.appendChild(cell('Combined'));
+          trt.appendChild(cell(hasD ? fmt(totalD) : '—'));
+          trt.appendChild(cell(hasI ? fmt(totalI) : '—'));
+          trt.appendChild(cell(hasD && hasI ? conv(totalD, totalI) : '—'));
           rawBody.appendChild(trt);
         }
         const chart = document.getElementById('traction-chart');
         if (!chart) return;
-        if (m.daily && Array.isArray(m.daily.dates) && m.daily.dates.length) {
+        // Accepts both shapes: { dates, series: [{ key, name, values }] } (current)
+        // and the legacy { dates, dancelog: [...], freestyle: [...] }, so the page
+        // keeps rendering between a site deploy and the next data sync.
+        const daily = (() => {
+          const d = m.daily;
+          if (!d || !Array.isArray(d.dates) || !d.dates.length) return null;
+          if (Array.isArray(d.series)) return { dates: d.dates, series: d.series.filter((s) => s && Array.isArray(s.values) && s.values.length) };
+          const legacy = Object.keys(d)
+            .filter((k) => k !== 'dates' && Array.isArray(d[k]) && d[k].length)
+            .map((k) => ({ key: k, name: APP_NAMES[k] || k, values: d[k] }));
+          return { dates: d.dates, series: legacy };
+        })();
+        if (daily && daily.series.length) {
           const W = 640, H = 150, PAD = 8;
-          const series = [
-            { key: 'dancelog', color: '#0c447c' },
-            { key: 'freestyle', color: '#85b7eb' }
-          ].filter((s) => Array.isArray(m.daily[s.key]));
-          const all = series.flatMap((s) => m.daily[s.key]);
+          const PALETTE = ['#0c447c', '#85b7eb', '#b8d3f0'];
+          const all = daily.series.reduce((acc, s) => acc.concat(s.values), []);
           const max = Math.max(1, ...all);
-          const x = (i) => PAD + (i * (W - 2 * PAD)) / Math.max(1, m.daily.dates.length - 1);
-          const y = (v) => H - PAD - (v * (H - 2 * PAD)) / max;
+          const x = (i) => PAD + (i * (W - 2 * PAD)) / Math.max(1, daily.dates.length - 1);
+          const y = (v) => H - PAD - ((Number(v) || 0) * (H - 2 * PAD)) / max;
           let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Daily downloads trend">';
-          series.forEach((s) => {
-            const pts = m.daily[s.key].map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
-            svg += '<polyline points="' + pts + '" fill="none" stroke="' + s.color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+          daily.series.forEach((s, idx) => {
+            const pts = s.values.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
+            svg += '<polyline points="' + pts + '" fill="none" stroke="' + PALETTE[idx % PALETTE.length] + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
           });
           svg += '</svg>';
-          const legend = series.map((s) => '<span class="tag">' + (s.key === 'dancelog' ? 'DanceLog' : 'Freestyle Challenge') + '</span>').join('');
-          chart.innerHTML = svg + '<div class="tags" style="margin-top:10px">' + legend + '</div>';
+          const legend = document.createElement('div');
+          legend.className = 'tags';
+          legend.style.marginTop = '10px';
+          daily.series.forEach((s) => {
+            const tag = document.createElement('span');
+            tag.className = 'tag';
+            tag.textContent = s.name || s.key;
+            legend.appendChild(tag);
+          });
+          chart.textContent = '';
+          chart.innerHTML = svg;
+          chart.appendChild(legend);
         } else {
-          chart.innerHTML = '<p class="traction-note">Daily trend appears here once the first automatic App Store Connect sync completes.</p>';
+          chart.textContent = '';
+          const note = document.createElement('p');
+          note.className = 'traction-note';
+          note.textContent = 'Daily trend appears here once the first automatic App Store Connect sync completes.';
+          chart.appendChild(note);
         }
       }
 

@@ -5,7 +5,10 @@
 // parseFloat read the year "2026" out of the date field (site showed 8,104
 // downloads = 2026 x 4 rows, 160,054 impressions = 2026 x 79 rows).
 
-import { parseCsv, sumWindow, buildWindow, unitsFromSalesRows, windowEndingAt } from './update-metrics.mjs';
+import {
+  parseCsv, sumWindow, buildWindow, unitsFromSalesRows, windowEndingAt,
+  appKeyFor, uniqueAppKeys, buildDailySeries
+} from './update-metrics.mjs';
 
 let failed = 0;
 function check(name, cond, extra = '') {
@@ -75,5 +78,59 @@ const w = windowEndingAt('2026-09-22');
 check('windowEndingAt length 60', w.length === 60, 'got ' + w.length);
 check('windowEndingAt ends at latest, oldest-first', w[59] === '2026-09-22' && w[0] === '2026-07-25',
   w[0] + ' .. ' + w[59]);
+
+// 6) App key mapping. Regression: /dance/ was tested FIRST, and the Freestyle
+//    app's store title is "Freestyle Dance Challenge" — so both apps resolved to
+//    "dancelog" (raw table showed two DanceLog rows, chart collapsed to 1 line).
+check('key: "Freestyle Dance Challenge" -> freestyle (contains "dance" too)',
+  appKeyFor('6796975099', ['Freestyle Dance Challenge']) === 'freestyle',
+  appKeyFor('6796975099', ['Freestyle Dance Challenge']));
+check('key: "Dance Log" -> dancelog',
+  appKeyFor('6795164130', ['Dance Log']) === 'dancelog',
+  appKeyFor('6795164130', ['Dance Log']));
+check('key: "DanceLog" (no space) -> dancelog',
+  appKeyFor('6795164130', ['DanceLog']) === 'dancelog',
+  appKeyFor('6795164130', ['DanceLog']));
+check('key: no title falls back to the Apple-ID map',
+  appKeyFor('6796975099', []) === 'freestyle' && appKeyFor('6795164130', []) === 'dancelog',
+  appKeyFor('6796975099', []) + '/' + appKeyFor('6795164130', []));
+check('key: unknown app is namespaced, never guessed',
+  appKeyFor('1234567890', ['Some Other App']) === 'app-1234567890',
+  appKeyFor('1234567890', ['Some Other App']));
+check('key: Apple ID wins over a renamed store title',
+  appKeyFor('6796975099', ['Totally Different Name']) === 'freestyle',
+  appKeyFor('6796975099', ['Totally Different Name']));
+check('key: title still resolves an unknown Apple ID',
+  appKeyFor('1234567890', ['Dance Log']) === 'dancelog',
+  appKeyFor('1234567890', ['Dance Log']));
+
+// 7) Keys must be unique across apps, even when titles collide.
+const keys = uniqueAppKeys([
+  { appleId: '6796975099', titles: ['Mystery App'] },
+  { appleId: '6795164130', titles: ['Mystery App'] }
+]);
+check('keys are unique when titles collide',
+  keys[0] !== keys[1], JSON.stringify(keys));
+check('colliding titles still resolve to known apps via Apple ID',
+  keys.includes('freestyle') && keys.includes('dancelog'), JSON.stringify(keys));
+
+// 8) Chart payload: one series per app (was hardcoded to 2 named keys).
+const built = buildDailySeries(['2026-09-22'], [
+  { key: 'freestyle', name: 'Freestyle Challenge', daily: [3] },
+  { key: 'dancelog', name: 'DanceLog', daily: [23] }
+]);
+check('daily series: one entry per app', built && built.series.length === 2, JSON.stringify(built && built.series.map(s => s.key)));
+check('daily series: keys preserved',
+  built && built.series.map(s => s.key).join(',') === 'freestyle,dancelog',
+  built && built.series.map(s => s.key).join(','));
+check('daily series: no series when nothing to plot',
+  buildDailySeries(['2026-09-22'], [{ key: 'x', name: 'X', daily: null }]) === null,
+  JSON.stringify(buildDailySeries(['2026-09-22'], [{ key: 'x', name: 'X', daily: null }])));
+check('daily series: empty array is not a series',
+  buildDailySeries(['2026-09-22'], [{ key: 'x', name: 'X', daily: [] }]) === null,
+  JSON.stringify(buildDailySeries(['2026-09-22'], [{ key: 'x', name: 'X', daily: [] }])));
+check('daily series: partially-empty values still render',
+  (buildDailySeries(['2026-09-22'], [{ key: 'x', name: 'X', daily: [0, 0] }]) || {}).series?.length === 1,
+  JSON.stringify(buildDailySeries(['2026-09-22'], [{ key: 'x', name: 'X', daily: [0, 0] }])));
 
 process.exit(failed);

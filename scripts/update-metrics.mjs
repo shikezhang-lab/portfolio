@@ -247,6 +247,86 @@ function unitsFromSalesRows(rows) {
 }
 
 /**
+ * Which app a report row belongs to. TWO pitfalls live here:
+ *  1. Rule order matters. The Freestyle app's App Store title is
+ *     "Freestyle Dance Challenge", which ALSO contains "dance" — testing
+ *     /dance/ first made BOTH apps resolve to "dancelog" (the raw table then
+ *     showed two DanceLog rows and the trend chart collapsed to one series).
+ *     The more specific rule must therefore come first.
+ *  2. The title is a human string and may be renamed at any time, so the
+ *     Apple-ID map is the fallback, never a guess from a partial keyword.
+ */
+const APP_KEY_BY_TITLE = [
+  { key: 'freestyle', re: /freestyle|challenge/i }, // must precede dancelog
+  { key: 'dancelog', re: /dance\s*log|dancelog/i }
+];
+const APP_KEY_BY_APPLE_ID = { '6796975099': 'freestyle', '6795164130': 'dancelog' };
+/** Display names — kept in sync with the site so the table/legend branding is stable. */
+const APP_LABEL = { freestyle: 'Freestyle Challenge', dancelog: 'DanceLog' };
+
+function appKeyFor(appleId, titles = []) {
+  // Apple ID first: for apps we track it is authoritative and cannot be renamed
+  // by an App Store title edit. The title is only a clue for apps we have no ID
+  // for, and it is checked against ALL rules (not just the first match) so a
+  // title matching two rules is never silently filed under the wrong app.
+  if (APP_KEY_BY_APPLE_ID[appleId]) return APP_KEY_BY_APPLE_ID[appleId];
+  const name = titles.filter(Boolean).join(' ');
+  const hits = APP_KEY_BY_TITLE.filter(rule => rule.re.test(name));
+  if (hits.length > 1) console.log(`  WARNING: title "${name}" matches multiple apps (${hits.map(h => h.key).join(', ')}) — add ${appleId} to APP_KEY_BY_APPLE_ID`);
+  return hits.length ? hits[0].key : ('app-' + appleId);
+}
+
+/** Cross-check the reported title against the ID map — a mismatch means the two drifted. */
+function titleAgreesWithKey(key, title) {
+  const label = APP_LABEL[key];
+  if (!label || !title) return true;
+  const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const t = norm(title), l = norm(label);
+  return t.includes(l) || l.includes(t);
+}
+
+/**
+ * Resolve keys for all apps, guaranteeing uniqueness. Two apps sharing one key
+ * is a silent data-loss bug downstream: the site keys the KPI cards, the raw
+ * table AND the chart series off `key`, so a collision drops a series without
+ * any error (that is exactly how the chart ended up with a single line).
+ */
+function uniqueAppKeys(entries) {
+  const used = new Set();
+  return entries.map(({ appleId, titles }) => {
+    let key = appKeyFor(appleId, titles);
+    if (used.has(key)) {
+      const fallback = APP_KEY_BY_APPLE_ID[appleId] || ('app-' + appleId);
+      console.log(`  WARNING: duplicate app key "${key}" for ${appleId} (titles: ${JSON.stringify(titles)})`);
+      if (!used.has(fallback)) {
+        key = fallback;
+      } else {
+        let n = 2;
+        while (used.has(key + '-' + n)) n++;
+        key = key + '-' + n;
+      }
+      console.log(`  WARNING: remapped ${appleId} to "${key}"`);
+    }
+    used.add(key);
+    return key;
+  });
+}
+
+/**
+ * Chart payload, built from the app list instead of hardcoded key lookups.
+ * (The old shape was { dates, dancelog: [...], freestyle: [...] }, so a key
+ * remap or a third app silently produced null series.)
+ */
+function buildDailySeries(dates, apps) {
+  const series = (apps || [])
+    // An empty array is not a series — it would draw nothing and still take a
+    // legend slot and a palette colour.
+    .filter(a => Array.isArray(a.daily) && a.daily.length)
+    .map(a => ({ key: a.key, name: a.name || APP_LABEL[a.key] || a.key, values: a.daily }));
+  return series.length ? { dates, series } : null;
+}
+
+/**
  * Download one Sales & Trends DAILY report (returns parsed CSV rows),
  * or null when the report is not available for that date yet (Apple
  * generates daily sales reports with a ~1-2 day lag; days without any
@@ -387,40 +467,53 @@ async function main() {
     }
   }
 
-  const fallbackFor = { '6796975099': 'freestyle', '6795164130': 'dancelog' };
-  // Prefer the real App Name reported inside the CSV over any hardcoded guess.
-  const keyFor = (appId, csvNames) => {
-    const n = (csvNames || []).join(' ').toLowerCase();
-    if (/dance/.test(n)) return 'dancelog';
-    if (/free|challenge/.test(n)) return 'freestyle';
-    return fallbackFor[appId] || ('app-' + appId);
-  };
-  const apps = appResults.map(({ appId, downloads, impressions }) => {
-    const csvNames = (downloads && downloads.appNames) || (impressions && impressions.appNames) || [];
-    const curD = downloads ? sumWindow(downloads.byDay, current) : null;
-    const prevD = downloads ? sumWindow(downloads.byDay, previous) : null;
-    const curI = impressions ? sumWindow(impressions.byDay, current) : null;
+  // Key resolution is collision-checked: a shared key silently drops a chart
+  // series and mislabels a raw-table row (see uniqueAppKeys).
+  const entries = appResults.map(({ appId, downloads, impressions }) => ({
+    appleId: appId,
+    titles: (downloads && downloads.appNames) || (impressions && impressions.appNames) || [],
+    downloads,
+    impressions
+  }));
+  const keys = uniqueAppKeys(entries);
+
+  // Absolute totals are accumulated here (single pass) instead of being
+  // re-derived from a filtered array — the previous `apps.indexOf(a)` lookup
+  // was both O(n²) and easy to get wrong.
+  let totalCur = 0, totalPrev = 0, totalImpCur = 0, hasDownloads = false, hasImpressions = false;
+  const apps = entries.map((e, i) => {
+    const key = keys[i];
+    const curD = e.downloads ? sumWindow(e.downloads.byDay, current) : null;
+    const prevD = e.downloads ? sumWindow(e.downloads.byDay, previous) : null;
+    const curI = e.impressions ? sumWindow(e.impressions.byDay, current) : null;
+    if (typeof curD === 'number') { totalCur += curD; totalPrev += prevD || 0; hasDownloads = true; }
+    if (typeof curI === 'number') { totalImpCur += curI; hasImpressions = true; }
     return {
-      key: keyFor(appId, csvNames),
-      appleId: appId,
-      downloadsMoMPct: downloads ? moM(curD, prevD) : null,
+      key,
+      // Branding stays consistent with the rest of the site; the report title
+      // is only used for apps we have no label for.
+      name: APP_LABEL[key] || e.titles[0] || key,
+      appleId: e.appleId,
+      downloadsMoMPct: typeof curD === 'number' ? moM(curD, prevD) : null,
       sharePct: null,
       downloads30d: curD,
       impressions30d: curI,
-      daily: downloads ? current.map(d => downloads.byDay.get(d) || 0) : null
+      daily: e.downloads ? current.map(d => e.downloads.byDay.get(d) || 0) : null
     };
   });
-
-  const withD = apps.filter(a => typeof a.downloads30d === 'number');
-  const totalCur = withD.reduce((s, a) => s + a.downloads30d, 0);
-  const totalPrev = withD.reduce((s, a) => s + (sumWindow(appResults[apps.indexOf(a)].downloads?.byDay || new Map(), previous)), 0);
   for (const a of apps) {
     if (totalCur > 0 && typeof a.downloads30d === 'number') a.sharePct = Math.round((a.downloads30d / totalCur) * 100);
   }
 
-  // Absolute totals (retained for honest on-site disclosure — not just MoM %).
-  const withI = apps.filter(a => typeof a.impressions30d === 'number');
-  const totalImpCur = withI.reduce((s, a) => s + a.impressions30d, 0);
+  // Coverage diagnostics. "0 downloads" and "the report file is missing for
+  // those days" look identical on the site, so print the distinction: a 30-day
+  // window backed by only a handful of rows is a data-collection problem, not a
+  // product signal, and should be visible in the workflow log.
+  for (const a of apps) {
+    const daysWithData = Array.isArray(a.daily) ? a.daily.filter(v => v > 0).length : 0;
+    console.log(`  ${a.key} (${a.appleId}): downloads30d=${a.downloads30d} impressions30d=${a.impressions30d}`
+      + ` — downloads seen on ${daysWithData}/${WINDOW} days`);
+  }
 
   const metrics = {
     // With Sales & Trends the numbers are only complete up to the latest
@@ -455,7 +548,10 @@ async function main() {
 
 // Only run when executed directly (node scripts/update-metrics.mjs); when
 // imported (e.g. by tests) just expose the pure helpers.
-export { parseCsv, sumWindow, buildWindow, moM, windowEndingAt, unitsFromSalesRows };
+export {
+  parseCsv, sumWindow, buildWindow, moM, windowEndingAt, unitsFromSalesRows,
+  appKeyFor, uniqueAppKeys, buildDailySeries
+};
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   main().catch((err) => { console.error('FATAL: ' + err.message); process.exit(1); });
 }
