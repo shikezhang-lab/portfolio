@@ -144,7 +144,13 @@ async function fetchSeries(token, appId, reportMatchers, metric = 'downloads') {
             }
           }
         });
-        if (requests && requests.data && requests.data.length) { list = requests.data; break; }
+        // A create call answers with a SINGLE resource object, not a collection,
+        // so `data.length` is undefined there. Testing it as an array made this
+        // branch never fire: the request was created and then discarded, and the
+        // loop went on to try the next accessType (duplicate requests).
+        const created = requests && requests.data;
+        const createdList = Array.isArray(created) ? created : (created ? [created] : []);
+        if (createdList.length) { list = createdList; break; }
       } catch (e) {
         console.log('  create failed: ' + e.message.slice(0, 200));
       }
@@ -345,13 +351,22 @@ function appKeyFor(appleId, titles = []) {
   return hits.length ? hits[0].key : ('app-' + appleId);
 }
 
-/** Cross-check the reported title against the ID map — a mismatch means the two drifted. */
+/**
+ * Cross-check the App Store title against the label the site renders. A mismatch
+ * means the two drifted (a renamed app, or an Apple ID mapped to the wrong key)
+ * and familiar-looking numbers would be published under the wrong name.
+ *
+ * Compared word-by-word against the normalised title, because the store title is
+ * allowed to be a superset: "Freestyle Dance Challenge" is a legitimate title for
+ * the app we label "Freestyle Challenge", and that extra "Dance" is exactly what
+ * made a naive keyword match file both apps under DanceLog.
+ */
 function titleAgreesWithKey(key, title) {
   const label = APP_LABEL[key];
   if (!label || !title) return true;
   const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
-  const t = norm(title), l = norm(label);
-  return t.includes(l) || l.includes(t);
+  const t = norm(title);
+  return String(label).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).every((w) => t.includes(w));
 }
 
 /**
@@ -549,14 +564,14 @@ async function main() {
   // Absolute totals are accumulated here (single pass) instead of being
   // re-derived from a filtered array — the previous `apps.indexOf(a)` lookup
   // was both O(n²) and easy to get wrong.
-  let totalCur = 0, totalPrev = 0, totalImpCur = 0, hasDownloads = false, hasImpressions = false;
+  let totalCur = 0, totalPrev = 0, totalImpCur = 0;
   const apps = entries.map((e, i) => {
     const key = keys[i];
     const curD = e.downloads ? sumWindow(e.downloads.byDay, current) : null;
     const prevD = e.downloads ? sumWindow(e.downloads.byDay, previous) : null;
     const curI = e.impressions ? sumWindow(e.impressions.byDay, current) : null;
-    if (typeof curD === 'number') { totalCur += curD; totalPrev += prevD || 0; hasDownloads = true; }
-    if (typeof curI === 'number') { totalImpCur += curI; hasImpressions = true; }
+    if (typeof curD === 'number') { totalCur += curD; totalPrev += prevD || 0; }
+    if (typeof curI === 'number') { totalImpCur += curI; }
     return {
       key,
       // Branding stays consistent with the rest of the site; the report title
@@ -578,11 +593,18 @@ async function main() {
   // those days" look identical on the site, so print the distinction: a 30-day
   // window backed by only a handful of rows is a data-collection problem, not a
   // product signal, and should be visible in the workflow log.
-  for (const a of apps) {
+  apps.forEach((a, i) => {
     const daysWithData = Array.isArray(a.daily) ? a.daily.filter(v => v > 0).length : 0;
+    // Drift guard: if the store title no longer matches the label we render, the
+    // numbers would be published under a name the reader associates with another
+    // app. Warn instead of failing silently (entries/apps share their order).
+    const storeTitle = (entries[i] && entries[i].titles && entries[i].titles[0]) || '';
+    if (storeTitle && !titleAgreesWithKey(a.key, storeTitle)) {
+      console.log(`  WARNING: store title "${storeTitle}" does not look like "${APP_LABEL[a.key] || a.key}" (appleId ${a.appleId}) — verify APP_KEY_BY_APPLE_ID`);
+    }
     console.log(`  ${a.key} (${a.appleId}): downloads30d=${a.downloads30d} impressions30d=${a.impressions30d}`
       + ` — downloads seen on ${daysWithData}/${WINDOW} days`);
-  }
+  });
 
   const metrics = {
     // With Sales & Trends the numbers are only complete up to the latest

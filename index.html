@@ -1646,20 +1646,22 @@
     <h2>Visitor insights</h2>
     <p class="uv-sub">Real, de-duplicated, owner-excluded. Built to show product thinking, not vanity metrics.</p>
     <div class="uv-grid">
-      <div class="uv-kpi"><div class="num" id="uv-kpi-total">—</div><div class="label">独立访客（去重后）</div></div>
-      <div class="uv-kpi"><div class="num" id="uv-kpi-dur">—</div><div class="label">平均停留时长（近似）</div></div>
-      <div class="uv-kpi"><div class="num" id="uv-kpi-7d">—</div><div class="label">近 7 日新增访客</div></div>
+      <div class="uv-kpi"><div class="num" id="uv-kpi-total">—</div><div class="label">Unique visitors (de-duplicated)</div></div>
+      <div class="uv-kpi"><div class="num" id="uv-kpi-dur">—</div><div class="label">Average time on site (approx.)</div></div>
+      <div class="uv-kpi"><div class="num" id="uv-kpi-7d">—</div><div class="label">New visitors, last 7 days</div></div>
     </div>
     <div class="uv-bars" id="uv-sources"></div>
-    <div class="uv-spark" id="uv-spark"></div>
+    <!-- The caption is static markup so translateText() can localise it; the
+         script only injects the <svg> above it. -->
+    <div class="uv-spark" id="uv-spark"><p class="cap">New visitors, last 30 days (de-duplicated daily)</p></div>
     <p class="uv-note" id="uv-note">
-      <b>How it works:</b> each visitor is de-duplicated by <code>hash(visitor_id | IP)</code> with a D1 unique constraint; the owner's own traffic is excluded via <code>localStorage</code> opt-out. IP and User-Agent are stored only as SHA-256 hashes. Source buckets are coarse (Referrer-Policy limits detail to the domain level), and session duration is best-effort — unreliable on mobile, shown as an approximation.
+      <b>How it works:</b> each visitor is de-duplicated server-side by <code>hash(visitor_id | IP)</code>, which is also the storage key, so a repeat visit cannot be counted twice; the owner's own traffic is excluded via a <code>localStorage</code> opt-out. IP and User-Agent are stored only as SHA-256 hashes, never in plaintext. Source buckets are coarse (Referrer-Policy limits detail to the domain level), and session duration is best-effort — unreliable on mobile, shown as an approximation.
     </p>
   </section>
 
   <footer class="site-footer">
     <div class="footer-row"><strong>Shike's AI Product Studio</strong><span>Product framing · AI systems · Hands-on delivery</span><a href="https://www.linkedin.com/in/shikezhang/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a></div>
-    <div class="footer-row" style="justify-content:flex-end;margin-top:10px;"><span class="uv-badge" style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:4px 12px;background:var(--paper-2);"><span style="width:7px;height:7px;border-radius:50%;background:var(--success);display:inline-block;"></span> <b id="uv-count" style="color:var(--accent);font-variant-numeric:tabular-nums;font-size:14px;">·····</b> 位独立访客</span></div>
+    <div class="footer-row" style="justify-content:flex-end;margin-top:10px;"><span class="uv-badge" style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:4px 12px;background:var(--paper-2);"><span style="width:7px;height:7px;border-radius:50%;background:var(--success);display:inline-block;"></span> <b id="uv-count" style="color:var(--accent);font-variant-numeric:tabular-nums;font-size:14px;">·····</b> unique visitors</span></div>
   </footer>
 
   <script>
@@ -2248,7 +2250,13 @@
         "Downloads per day": "每日下载量",
         "days": "天",
         "peak": "峰值",
-        "Total (30d)": "近 30 天合计"
+        "Total (30d)": "近 30 天合计",
+        "Visitor insights": "访客洞察",
+        "Unique visitors (de-duplicated)": "独立访客（已去重）",
+        "Average time on site (approx.)": "平均停留时长（近似）",
+        "New visitors, last 7 days": "近 7 日新增访客",
+        "New visitors, last 30 days (de-duplicated daily)": "近 30 日新增访客（每日去重）",
+        "unique visitors": "位独立访客"
       };
 
       /* ASC-METRICS:START (auto-updated by GitHub Action — do not edit by hand) */
@@ -3023,15 +3031,19 @@
     const UV_ENDPOINT = 'https://portfolio-uv-d9gkwr12q9ddbdd3d-1306214631.ap-shanghai.app.tcloudbase.com'; // CloudBase 云接入默认域名（大陆直连必达）
     const configured = () => !!(UV_ENDPOINT && UV_ENDPOINT.startsWith('http'));
     try {
-      if (localStorage.getItem('uv_owner_optout')) return;            // 本人排除（主）
+      // 本人排除（主）：只跳过「写入」，绝不早退整个 IIFE —— 读取（页脚徽标 +
+      // 访客洞察看板）必须照常执行，否则站长自己的浏览器上全是「—」。
+      const ownerOptOut = !!localStorage.getItem('uv_owner_optout');
       if (!configured()) return;                                       // 未配置则不发请求，避免线上报错
       const K = 'uv_vid';
       let vid = localStorage.getItem(K);
       if (!vid) { vid = (crypto.randomUUID ? crypto.randomUUID() : 'v_' + Math.random().toString(36).slice(2)); localStorage.setItem(K, vid); }
-      const route = location.hash || '#/home';
-      const payload = JSON.stringify({ visitorId: vid, referrer: document.referrer || '', route });
-      if (navigator.sendBeacon) navigator.sendBeacon(UV_ENDPOINT + '/count', payload);
-      else fetch(UV_ENDPOINT + '/count', { method: 'POST', body: payload, headers: { 'content-type': 'application/json' }, keepalive: true }).catch(() => {});
+      if (!ownerOptOut) {
+        const route = location.hash || '#/home';
+        const payload = JSON.stringify({ visitorId: vid, referrer: document.referrer || '', route });
+        if (navigator.sendBeacon) navigator.sendBeacon(UV_ENDPOINT + '/count', payload);
+        else fetch(UV_ENDPOINT + '/count', { method: 'POST', body: payload, headers: { 'content-type': 'application/json' }, keepalive: true }).catch(() => {});
+      }
       // 拉取计数渲染页脚徽标
       fetch(UV_ENDPOINT + '/count').then((r) => r.json()).then((d) => {
         const el = document.getElementById('uv-count');
@@ -3040,6 +3052,16 @@
       // 拉取聚合数据渲染「访客洞察」看板（计数器 + 粗略来源桶 + 停留时长）
       fetch(UV_ENDPOINT + '/stats').then((r) => r.json()).then((d) => {
         if (!d) return;
+        // Contract: `daily` is ALWAYS oldest -> newest (see the backends in
+        // scripts/). The two backends used to disagree — the D1 worker
+        // returned ORDER BY day DESC, CloudBase returns ascending — and the
+        // client was written for only one of them, so the "last 7 days" KPI
+        // summed the OLDEST week and the sparkline ran newest -> oldest.
+        // Sorting on the day string removes the client's dependence on that.
+        const daily = Array.isArray(d.daily)
+          ? d.daily.filter((x) => x && typeof x.day === 'string')
+              .sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0))
+          : [];
         const totalEl = document.getElementById('uv-kpi-total');
         if (totalEl && typeof d.total === 'number') totalEl.textContent = d.total.toLocaleString();
         const durEl = document.getElementById('uv-kpi-dur');
@@ -3050,30 +3072,68 @@
           } else { durEl.textContent = '—'; }
         }
         const el7 = document.getElementById('uv-kpi-7d');
-        if (el7 && Array.isArray(d.daily)) {
-          el7.textContent = d.daily.slice(0, 7).reduce((a, x) => a + (x.uv || 0), 0).toLocaleString();
+        // Ascending order, so the LAST seven entries are the most recent ones.
+        if (el7 && daily.length) {
+          el7.textContent = daily.slice(-7).reduce((a, x) => a + (x.uv || 0), 0).toLocaleString();
         }
         const sb = document.getElementById('uv-sources');
         if (sb && Array.isArray(d.sources) && d.sources.length) {
           const names = { linkedin: 'LinkedIn', github: 'GitHub', search: 'Search', direct: 'Direct', other: 'Other' };
-          const max = Math.max.apply(null, d.sources.map((x) => x.c));
-          sb.innerHTML = d.sources.slice().sort((a, b) => b.c - a.c).map((x) => {
-            const pct = max ? Math.round((x.c / max) * 100) : 0;
-            return '<div class="uv-bar"><span>' + (names[x.bucket] || x.bucket) + '</span><span class="track"><span class="fill" style="width:' + pct + '%"></span></span><span class="val">' + x.c.toLocaleString() + '</span></div>';
-          }).join('');
+          const num = (x) => (Number(x && x.c) || 0);
+          const max = d.sources.reduce((acc, x) => Math.max(acc, num(x)), 0);
+          sb.textContent = '';
+          d.sources.slice().sort((a, b) => num(b) - num(a)).forEach((x) => {
+            // Built from nodes, never innerHTML: the bucket name arrives from a
+            // public, unauthenticated /stats response and is not ours to trust.
+            const row = document.createElement('div');
+            row.className = 'uv-bar';
+            const nm = document.createElement('span');
+            nm.textContent = names[x.bucket] || String(x.bucket || 'other');
+            const track = document.createElement('span');
+            track.className = 'track';
+            const fill = document.createElement('span');
+            fill.className = 'fill';
+            fill.style.width = (max ? Math.round((num(x) / max) * 100) : 0) + '%';
+            track.appendChild(fill);
+            const val = document.createElement('span');
+            val.className = 'val';
+            val.textContent = num(x).toLocaleString();
+            row.appendChild(nm);
+            row.appendChild(track);
+            row.appendChild(val);
+            sb.appendChild(row);
+          });
         }
         const sp = document.getElementById('uv-spark');
-        if (sp && Array.isArray(d.daily) && d.daily.length) {
-          const vals = d.daily.slice().reverse().map((x) => x.uv || 0);
+        if (sp && daily.length) {
+          // Ascending order => left is the oldest day, right is today.
+          const vals = daily.map((x) => x.uv || 0);
           const W = 600, H = 60, maxV = Math.max.apply(null, vals) || 1;
           const pts = vals.map((v, i) => (i * (W / (vals.length - 1 || 1))).toFixed(1) + ',' + (H - (v / maxV) * (H - 6) - 3).toFixed(1)).join(' ');
           const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#1670b7';
-          sp.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none"><polyline points="' + pts + '" fill="none" stroke="' + accent + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="cap">近 30 日新增访客（每日去重）</div>';
+          // Only the <svg> is injected. The caption is static markup inside
+          // #uv-spark so translateText() can localise it — replacing innerHTML
+          // here used to wipe it and re-emit hardcoded Chinese.
+          const NS = 'http://www.w3.org/2000/svg';
+          const svg = document.createElementNS(NS, 'svg');
+          svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+          svg.setAttribute('preserveAspectRatio', 'none');
+          const line = document.createElementNS(NS, 'polyline');
+          line.setAttribute('points', pts);
+          line.setAttribute('fill', 'none');
+          line.setAttribute('stroke', accent.trim());
+          line.setAttribute('stroke-width', '2');
+          line.setAttribute('stroke-linecap', 'round');
+          line.setAttribute('stroke-linejoin', 'round');
+          svg.appendChild(line);
+          const old = sp.querySelector('svg');
+          if (old) old.remove();
+          sp.insertBefore(svg, sp.firstChild);
         }
       }).catch(() => {});
       // best-effort 会话时长（移动端不可靠，仅供参考）
       const t0 = Date.now();
-      const sendDur = () => { try { if (navigator.sendBeacon) navigator.sendBeacon(UV_ENDPOINT + '/duration', JSON.stringify({ visitorId: vid, durationMs: Date.now() - t0 })); } catch (e) {} };
+      const sendDur = () => { try { if (ownerOptOut) return; if (navigator.sendBeacon) navigator.sendBeacon(UV_ENDPOINT + '/duration', JSON.stringify({ visitorId: vid, durationMs: Date.now() - t0 })); } catch (e) {} };
       window.addEventListener('pagehide', sendDur);
       document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sendDur(); });
     } catch (e) { /* 静默 */ }
