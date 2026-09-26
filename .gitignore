@@ -15,3 +15,6 @@ outputs/
 
 # Internal code-review reports (share by hand, not via the public repo)
 REVIEW_*.md
+
+# Cloudflare wrangler local state (deprecated UV backend)
+.wrangler/

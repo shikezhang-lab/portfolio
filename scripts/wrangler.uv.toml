@@ -1,0 +1,16 @@
+# scripts/wrangler.uv.toml —— UV Worker 部署配置
+# 部署：wrangler deploy -c scripts/wrangler.uv.toml
+# 建库：  wrangler d1 create portfolio_uv   （把输出的 database_id 填到下面）
+name = "portfolio-uv"
+main = "uv-worker.js"
+compatibility_date = "2024-09-23"
+
+# 本人 IP 白名单（可选，服务端兜底排除自测流量）；多个用逗号分隔
+# 也可不在客户端设 uv_owner_optout，仅用此白名单
+[vars]
+# OWNER_IPS = "203.0.113.42,198.51.100.7"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "portfolio_uv"
+database_id = "b2655f77-4bdc-43e5-b218-cff951fc39aa"

@@ -505,6 +505,41 @@
     .traction-chart { margin-top: 14px; border: 1px solid var(--line); border-radius: 2px; background: var(--white); padding: 18px; }
     .traction-chart svg { display: block; width: 100%; height: auto; }
     .traction-note { color: var(--muted); font-size: .85rem; margin: 0; }
+
+    /* --- Traction trend chart ----------------------------------------------
+       Deliberately built from the same palette as the rest of the page
+       (--accent family, --line, --muted) so the chart reads as part of the
+       document rather than as an embedded third-party widget. */
+    .chart-unit {
+      color: var(--muted); font-size: .72rem; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase; margin: 0 0 10px;
+    }
+    .chart-wrap { position: relative; }
+    .chart-wrap svg { overflow: visible; }
+    .chart-wrap svg text { font-family: inherit; }
+    .chart-tip {
+      position: absolute; left: 0; top: 0; z-index: 4;
+      min-width: 128px; padding: 8px 10px;
+      background: var(--white); border: 1px solid var(--line); border-radius: 2px;
+      box-shadow: 0 8px 22px rgba(7, 30, 61, .14);
+      font-size: .76rem; line-height: 1.5; color: var(--ink);
+      opacity: 0; visibility: hidden; transition: opacity .12s ease;
+    }
+    .chart-tip[data-visible="1"] { opacity: 1; visibility: visible; }
+    .chart-tip-date {
+      font-weight: 700; margin-bottom: 5px; padding-bottom: 5px;
+      border-bottom: 1px solid var(--line); letter-spacing: .01em;
+    }
+    .chart-tip-row { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .chart-tip-row + .chart-tip-row { margin-top: 3px; }
+    .chart-tip-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+    .chart-tip-val { margin-left: auto; padding-left: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .chart-legend { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-top: 14px; }
+    .chart-legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: .8rem; }
+    .chart-legend-item > span { color: var(--muted); }
+    .chart-legend-item > b { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .chart-swatch { width: 18px; height: 3px; border-radius: 2px; flex: 0 0 auto; background: currentColor; }
+    .chart-swatch.dashed { background: repeating-linear-gradient(90deg, currentColor 0 5px, transparent 5px 8px); }
     .traction-source { color: var(--muted); font-size: .8rem; margin-top: 12px; }
     .traction-honest { margin-top: 14px; color: var(--muted); font-size: .9rem; line-height: 1.55; border-left: 3px solid var(--accent); padding: 4px 0 4px 12px; }
     .traction-honest strong { color: var(--ink); }
@@ -710,6 +745,27 @@
 
     .case-navigation { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 24px; }
     .site-footer { padding: 36px max(18px, calc((100% - 1160px)/2)); border-top: 1px solid var(--line); color: var(--muted); }
+
+    /* —— UV 访客洞察看板（计数器 + 粗略来源桶 + 停留时长） —— */
+    .uv-insights { padding: 30px max(18px, calc((100% - 1160px)/2)); border-top: 1px solid var(--line); background: var(--paper-2); }
+    .uv-insights h2 { font-size: 1.05rem; margin: 0 0 4px; color: var(--ink); }
+    .uv-insights .uv-sub { color: var(--muted); font-size: .85rem; margin: 0 0 18px; }
+    .uv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+    .uv-kpi { border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); padding: 14px 16px; }
+    .uv-kpi .num { font-size: 1.7rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .uv-kpi .num small { font-size: .8rem; font-weight: 500; color: var(--muted); }
+    .uv-kpi .label { font-size: .8rem; color: var(--muted); margin-top: 4px; }
+    .uv-bars { display: grid; gap: 8px; }
+    .uv-bar { display: grid; grid-template-columns: 92px 1fr 54px; align-items: center; gap: 10px; font-size: .85rem; }
+    .uv-bar .track { height: 8px; background: var(--paper); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+    .uv-bar .fill { height: 100%; background: var(--accent); border-radius: 99px; }
+    .uv-bar .val { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .uv-spark { margin-top: 6px; }
+    .uv-spark svg { width: 100%; height: 60px; display: block; }
+    .uv-spark .cap { font-size: .8rem; color: var(--muted); margin: 2px 0 14px; }
+    .uv-note { font-size: .78rem; color: var(--muted); line-height: 1.5; margin: 4px 0 0; border-top: 1px dashed var(--line); padding-top: 10px; }
+    .uv-note b { color: var(--ink); font-weight: 600; }
+    @media (max-width: 720px) { .uv-grid { grid-template-columns: 1fr; } }
     .footer-row { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
 
     @media (max-width: 900px) {
@@ -762,6 +818,15 @@
       .image-gallery figure { flex: 0 0 82%; max-width: none; scroll-snap-align: start; }
       .tech-tags { gap: 7px; }
       .win-phone { width: 40%; }
+    }
+    @media (max-width: 560px) {
+      /* Trim the chart's own padding first — the plot keeps its aspect ratio,
+         the card just stops eating a third of a phone screen. */
+      .traction-chart { padding: 13px; }
+      .chart-unit { margin-bottom: 8px; }
+      .chart-tip { min-width: 112px; padding: 7px 9px; font-size: .73rem; }
+      .chart-tip-val { padding-left: 10px; }
+      .chart-legend { gap: 5px 14px; margin-top: 12px; }
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
@@ -1577,8 +1642,24 @@
     </article>
   </main>
 
+  <section class="uv-insights" id="uv-insights" aria-label="Visitor insights">
+    <h2>Visitor insights</h2>
+    <p class="uv-sub">Real, de-duplicated, owner-excluded. Built to show product thinking, not vanity metrics.</p>
+    <div class="uv-grid">
+      <div class="uv-kpi"><div class="num" id="uv-kpi-total">—</div><div class="label">独立访客（去重后）</div></div>
+      <div class="uv-kpi"><div class="num" id="uv-kpi-dur">—</div><div class="label">平均停留时长（近似）</div></div>
+      <div class="uv-kpi"><div class="num" id="uv-kpi-7d">—</div><div class="label">近 7 日新增访客</div></div>
+    </div>
+    <div class="uv-bars" id="uv-sources"></div>
+    <div class="uv-spark" id="uv-spark"></div>
+    <p class="uv-note" id="uv-note">
+      <b>How it works:</b> each visitor is de-duplicated by <code>hash(visitor_id | IP)</code> with a D1 unique constraint; the owner's own traffic is excluded via <code>localStorage</code> opt-out. IP and User-Agent are stored only as SHA-256 hashes. Source buckets are coarse (Referrer-Policy limits detail to the domain level), and session duration is best-effort — unreliable on mobile, shown as an approximation.
+    </p>
+  </section>
+
   <footer class="site-footer">
     <div class="footer-row"><strong>Shike's AI Product Studio</strong><span>Product framing · AI systems · Hands-on delivery</span><a href="https://www.linkedin.com/in/shikezhang/" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a></div>
+    <div class="footer-row" style="justify-content:flex-end;margin-top:10px;"><span class="uv-badge" style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:4px 12px;background:var(--paper-2);"><span style="width:7px;height:7px;border-radius:50%;background:var(--success);display:inline-block;"></span> <b id="uv-count" style="color:var(--accent);font-variant-numeric:tabular-nums;font-size:14px;">·····</b> 位独立访客</span></div>
   </footer>
 
   <script>
@@ -1615,6 +1696,14 @@
           ? "Shike's AI Product Studio"
           : `${document.querySelector(`[data-page="${page}"] h1`).textContent} — Shike Zhang`;
         if (scroll) window.scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+        // The trend chart's canvas is measured from its container, and a page that
+        // is display:none has no width at all — so if the chart was drawn while
+        // hidden (or at a stale width), rebuild it now that it is on screen.
+        const chartHost = document.getElementById('traction-chart');
+        if (chartHost) {
+          const w = Math.round(chartHost.clientWidth);
+          if (w >= 320 && chartHost.dataset.measured !== String(w)) renderTraction();
+        }
         if (pendingScroll && page === 'home') {
           const target = pendingScroll;
           pendingScroll = null;
@@ -2155,7 +2244,11 @@
         "Downloads (30d)": "下载量（30天）",
         "Impressions (30d)": "浏览量（30天）",
         "Conv.": "转化率",
-        "Combined": "合计"
+        "Combined": "合计",
+        "Downloads per day": "每日下载量",
+        "days": "天",
+        "peak": "峰值",
+        "Total (30d)": "近 30 天合计"
       };
 
       /* ASC-METRICS:START (auto-updated by GitHub Action — do not edit by hand) */
@@ -2402,6 +2495,10 @@
         siteLang = lang;
         document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
         langButtons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.langBtn === lang)));
+        // Re-render the chart first: its axis captions and aria labels are built
+        // at render time (translateText only rewrites text nodes that already
+        // exist), so they need the new language before it runs.
+        renderTraction();
         translateText(lang);
         applyStoreLocale();
         renderPage({ scroll: false });
@@ -2411,6 +2508,88 @@
       langButtons.forEach((button) => button.addEventListener('click', () => {
         if (button.dataset.langBtn !== siteLang) setSiteLang(button.dataset.langBtn);
       }));
+
+      /** Translate a string built at runtime (translateText only walks live text
+       *  nodes, so anything injected later has to be translated at build time). */
+      const tr = (s) => (siteLang === 'zh' && I18N[s]) ? I18N[s] : s;
+
+      /** Measure text with the page's own font stack, in px. Chart labels are
+       *  laid out against their real width — guessing from a character count let
+       *  "Aug 22" and "Aug 27" collide on a narrow canvas while looking fine on a
+       *  wide one, which is exactly the kind of bug a fixed label count hides. */
+      const textMeasure = (() => {
+        let ctx = null;
+        try { ctx = document.createElement('canvas').getContext('2d'); } catch (e) { ctx = null; }
+        const stack = 'Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
+        return (str, px) => {
+          if (!ctx) return str.length * px * 0.58;
+          ctx.font = px + 'px ' + stack;
+          return ctx.measureText(str).width;
+        };
+      })();
+
+      /**
+       * Axis ticks on round numbers. Chosen from a candidate list rather than
+       * 10^n steps so integer data does not get labelled 0/5/10/15 when
+       * 0/6/12/18/24 is both tighter and easier to read.
+       */
+      const STEP_CANDIDATES = [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60, 80, 100, 150, 200, 250, 500, 1000];
+      function niceTicks(max, target) {
+        if (!(max > 0)) return { top: 1, ticks: [0, 1] };
+        const want = max / (target || 4);
+        let step = STEP_CANDIDATES.find((s) => s >= want);
+        if (!step) { const mag = Math.pow(10, Math.ceil(Math.log10(want))); step = Math.ceil(want / mag) * mag; }
+        const top = Math.ceil(max / step) * step;
+        const ticks = [];
+        for (let v = 0; v <= top + 1e-9; v += step) ticks.push(v);
+        return { top, ticks };
+      }
+
+      /**
+       * Monotone cubic interpolation (Fritsch-Carlson).
+       *
+       * A plain Catmull-Rom / "cardinal" spline overshoots: it invents peaks
+       * above the real maximum and dips below zero between two low points, so a
+       * smoothed line would show downloads the app never had. A moving average
+       * would hide real spikes instead. Monotone cubic is the one smooth curve
+       * that passes through EVERY data point while staying inside the value band
+       * of each segment, i.e. it softens the corners without changing the story.
+       */
+      function monotonePath(pts) {
+        const n = pts.length;
+        if (!n) return '';
+        const f = (v) => v.toFixed(2);
+        if (n === 1) return 'M' + f(pts[0][0]) + ',' + f(pts[0][1]);
+        if (n === 2) return 'M' + f(pts[0][0]) + ',' + f(pts[0][1]) + 'L' + f(pts[1][0]) + ',' + f(pts[1][1]);
+        const dx = [], slope = [];
+        for (let i = 0; i < n - 1; i++) {
+          dx[i] = pts[i + 1][0] - pts[i][0];
+          slope[i] = dx[i] === 0 ? 0 : (pts[i + 1][1] - pts[i][1]) / dx[i];
+        }
+        const m = [slope[0]];
+        for (let i = 1; i < n - 1; i++) {
+          // A sign change means a local extremum: force a flat tangent so the
+          // curve turns exactly on the data point instead of bulging past it.
+          m[i] = slope[i - 1] * slope[i] <= 0 ? 0 : (slope[i - 1] + slope[i]) / 2;
+        }
+        m[n - 1] = slope[n - 2];
+        for (let i = 0; i < n - 1; i++) {
+          if (slope[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+          const a = m[i] / slope[i], b = m[i + 1] / slope[i];
+          const h = Math.hypot(a, b);
+          if (h > 3) { m[i] = (3 / h) * a * slope[i]; m[i + 1] = (3 / h) * b * slope[i]; }
+        }
+        let d = 'M' + f(pts[0][0]) + ',' + f(pts[0][1]);
+        for (let i = 0; i < n - 1; i++) {
+          const lo = Math.min(pts[i][1], pts[i + 1][1]);
+          const hi = Math.max(pts[i][1], pts[i + 1][1]);
+          const clamp = (v) => Math.min(hi, Math.max(lo, v));
+          const x1 = pts[i][0] + dx[i] / 3, y1 = clamp(pts[i][1] + (m[i] * dx[i]) / 3);
+          const x2 = pts[i + 1][0] - dx[i] / 3, y2 = clamp(pts[i + 1][1] - (m[i + 1] * dx[i]) / 3);
+          d += 'C' + f(x1) + ',' + f(y1) + ' ' + f(x2) + ',' + f(y2) + ' ' + f(pts[i + 1][0]) + ',' + f(pts[i + 1][1]);
+        }
+        return d;
+      }
 
       function renderTraction() {
         const m = ASC_METRICS;
@@ -2491,47 +2670,412 @@
             .map((k) => ({ key: k, name: APP_NAMES[k] || k, values: d[k] }));
           return { dates: d.dates, series: legacy };
         })();
-        if (daily && daily.series.length) {
-          const W = 640, H = 150, PAD = 8;
-          const PALETTE = ['#0c447c', '#85b7eb', '#b8d3f0'];
-          const all = daily.series.reduce((acc, s) => acc.concat(s.values), []);
-          const max = Math.max(1, ...all);
-          const x = (i) => PAD + (i * (W - 2 * PAD)) / Math.max(1, daily.dates.length - 1);
-          const y = (v) => H - PAD - ((Number(v) || 0) * (H - 2 * PAD)) / max;
-          let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Daily downloads trend">';
-          daily.series.forEach((s, idx) => {
-            const pts = s.values.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
-            svg += '<polyline points="' + pts + '" fill="none" stroke="' + PALETTE[idx % PALETTE.length] + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
-          });
-          svg += '</svg>';
-          const legend = document.createElement('div');
-          legend.className = 'tags';
-          legend.style.marginTop = '10px';
-          daily.series.forEach((s) => {
-            const tag = document.createElement('span');
-            tag.className = 'tag';
-            tag.textContent = s.name || s.key;
-            legend.appendChild(tag);
-          });
-          chart.textContent = '';
-          chart.innerHTML = svg;
-          chart.appendChild(legend);
-        } else {
-          chart.textContent = '';
+        chart.textContent = '';
+        if (!daily || !daily.series.length) {
           const note = document.createElement('p');
           note.className = 'traction-note';
           note.textContent = 'Daily trend appears here once the first automatic App Store Connect sync completes.';
           chart.appendChild(note);
+          return;
         }
+
+        const dates = daily.dates;
+        const N = dates.length;
+        const locale = siteLang === 'zh' ? 'zh-CN' : 'en-US';
+
+        // --- geometry --------------------------------------------------------
+        // The viewBox is measured from the host instead of hardcoded, because SVG
+        // text scales with the viewBox: a fixed 720-unit canvas renders axis
+        // labels at ~16px on a 1084px desktop and ~5px on a phone. Sizing the
+        // canvas to the container keeps 1 unit ≈ 1 CSS pixel, so the typography
+        // is the same physical size everywhere. (Re-rendered on resize, and when
+        // the <details> is opened, because a closed details measures 0px wide.)
+        const hostW = Math.round(chart.clientWidth || 0);
+        // Remembered so renderPage can tell whether the canvas was measured while
+        // this page was genuinely on screen (a display:none page measures 0).
+        chart.dataset.measured = String(hostW);
+        // Below ~200px the container has not been laid out yet (closed <details>,
+        // or a page that is display:none) — fall back to a sane canvas instead of
+        // drawing into a 3px-wide box.
+        const VB_W = hostW >= 200 ? Math.min(hostW, 1180) : 720;
+        const compact = VB_W < 480;
+        // Aspect steps with width: a narrow canvas needs a taller plot or the 30
+        // daily values collapse into a flat ribbon, while a wide one becomes a
+        // wall of chart. A single hard breakpoint failed both ends.
+        const aspect = VB_W < 480 ? 1.9 : VB_W < 760 ? 2.5 : 3.1;
+        const VB_H = Math.round(VB_W / aspect);
+        const PAD_L = compact ? 32 : 46;
+        const PAD_R = compact ? 12 : 18;
+        const PAD_T = compact ? 26 : 30;
+        const PAD_B = compact ? 28 : 34;
+        const FS = compact ? 10 : 11; // axis label size, in viewBox units (≈ px)
+        const plotW = VB_W - PAD_L - PAD_R;
+        const plotH = VB_H - PAD_T - PAD_B;
+        const baseY = PAD_T + plotH;
+
+        // DanceLog owns the KPI cards in this section, so it keeps the primary
+        // colour permanently — a ranking-based palette would recolour itself on
+        // every sync and break the association the copy already made.
+        const rank = (k) => (k === 'dancelog' ? 0 : k === 'freestyle' ? 1 : 2);
+        const series = daily.series
+          .map((s, i) => ({ key: s.key, name: s.name || s.key, values: s.values.map((v) => Number(v) || 0), _i: i }))
+          .sort((a, b) => (rank(a.key) - rank(b.key)) || (a._i - b._i));
+
+        // Primary: deep blue, solid, 2.25px — 9.8:1 against white. Secondary:
+        // desaturated slate-blue, solid but thinner and lighter — 3.3:1. Both
+        // clear the 3:1 bar for meaningful graphics. The hierarchy is carried by
+        // lightness and weight rather than by hue alone, so the two series stay
+        // separable in greyscale too. (Deliberately NOT dashed: a dashed line
+        // reads as "forecast" in this kind of chart, and both series are measured
+        // actuals. A dash pattern is held in reserve for a third app.)
+        const SERIES_STYLE = [
+          { line: '#0C447C', wash: 0.28, width: 2.25, dash: null },
+          { line: '#5E8FBE', wash: 0.22, width: 1.6, dash: null },
+          { line: '#9DB6CE', wash: 0.15, width: 1.5, dash: '2 3' }
+        ];
+        const styleOf = (i) => SERIES_STYLE[i % SERIES_STYLE.length];
+
+        // Areas must be read from zero: an area chart with a truncated axis
+        // exaggerates every wiggle, which is exactly the distortion to avoid.
+        const top = series.reduce((acc, s) => Math.max(acc, Math.max.apply(null, s.values)), 0);
+        const scale = niceTicks(top, 4);
+        const xAt = (i) => PAD_L + (N <= 1 ? plotW / 2 : (i * plotW) / (N - 1));
+        const yAt = (v) => baseY - ((Number(v) || 0) / scale.top) * plotH;
+        const fmtDay = (d) => (d ? new Date(d + 'T00:00:00Z')
+          .toLocaleDateString(locale, { month: 'short', day: 'numeric', timeZone: 'UTC' }) : '');
+        const totalOf = (s) => s.values.reduce((a, b) => a + b, 0);
+
+        const NS = 'http://www.w3.org/2000/svg';
+        const node = (name, attrs) => {
+          const n = document.createElementNS(NS, name);
+          for (const k in attrs) if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, String(attrs[k]));
+          return n;
+        };
+
+        const svg = node('svg', {
+          viewBox: '0 0 ' + VB_W + ' ' + VB_H,
+          preserveAspectRatio: 'xMidYMid meet',
+          role: 'img',
+          'aria-label': tr('Downloads per day') + ', ' + N + ' ' + tr('days')
+        });
+        const svgTitle = node('title');
+        svgTitle.textContent = tr('Downloads per day') + ', ' + N + ' ' + tr('days');
+        svg.appendChild(svgTitle);
+
+        // Gradient anchored to each series' OWN peak, in user space. Two reasons:
+        // objectBoundingBox would measure the whole viewBox (axis padding
+        // included) so the wash would quit mid-air, and a shared plot-box anchor
+        // makes a series whose maximum is 2 fade out before its own curve and
+        // render as an invisible sliver. Height still encodes magnitude; only the
+        // fade's starting point moves.
+        const defs = node('defs');
+        series.forEach((s, i) => {
+          const st = styleOf(i);
+          const sTop = Math.max(0, Math.max.apply(null, s.values));
+          const gTop = Math.min(yAt(sTop), baseY - 6);
+          const grad = node('linearGradient', {
+            id: 'asc-wash-' + i, gradientUnits: 'userSpaceOnUse',
+            x1: 0, y1: gTop, x2: 0, y2: baseY
+          });
+          grad.appendChild(node('stop', { offset: '0%', 'stop-color': st.line, 'stop-opacity': st.wash }));
+          grad.appendChild(node('stop', { offset: '55%', 'stop-color': st.line, 'stop-opacity': (st.wash * 0.42).toFixed(3) }));
+          grad.appendChild(node('stop', { offset: '100%', 'stop-color': st.line, 'stop-opacity': '0.015' }));
+          defs.appendChild(grad);
+        });
+        svg.appendChild(defs);
+
+        // Axes. Grid sits behind the data and stays almost invisible (#EEF3F8 is
+        // ~1.5% ink) — it is a reading aid, not content. The zero baseline is the
+        // one line allowed a little more weight, because the areas stand on it.
+        const grid = node('g', { 'aria-hidden': 'true' });
+        scale.ticks.forEach((v) => {
+          const y = yAt(v);
+          grid.appendChild(node('line', {
+            x1: PAD_L, y1: y, x2: PAD_L + plotW, y2: y,
+            stroke: v === 0 ? '#D3DDE7' : '#EEF3F8', 'stroke-width': 1,
+            'shape-rendering': 'crispEdges'
+          }));
+          const lab = node('text', {
+            x: PAD_L - 10, y: y + 3.5, 'text-anchor': 'end',
+            fill: '#8494A3', 'font-size': FS, 'font-variant-numeric': 'tabular-nums'
+          });
+          lab.textContent = String(v);
+          grid.appendChild(lab);
+        });
+        svg.appendChild(grid);
+
+        const xAxis = node('g', { 'aria-hidden': 'true' });
+        // Lay the date labels out against their MEASURED width. Anchors differ by
+        // position (first is start-anchored, last end-anchored, the rest centred),
+        // so the check compares actual label edges rather than tick positions.
+        // Cap at 7: a wide canvas should stay calm, not turn into a ruler.
+        const dayLabels = dates.map((d) => fmtDay(d));
+        const widest = dayLabels.reduce((acc, s) => Math.max(acc, textMeasure(s, FS)), 0);
+        const gutter = 8;
+        const extentOf = (i) => {
+          const x = xAt(i);
+          if (i === 0) return [x, x + widest];
+          if (i === N - 1) return [x - widest, x];
+          return [x - widest / 2, x + widest / 2];
+        };
+        const minGap = widest + gutter;
+        const maxLabels = Math.min(7, Math.max(3, Math.floor(plotW / minGap) + 1));
+        const stride = Math.max(1, Math.ceil((N - 1) / (maxLabels - 1)));
+        const marks = [];
+        for (let i = 0; i < N - 1; i += stride) {
+          if (!marks.length || extentOf(i)[0] >= extentOf(marks[marks.length - 1])[1] + gutter) marks.push(i);
+        }
+        if (!marks.length) marks.push(0);
+        if (marks[marks.length - 1] !== N - 1) {
+          // The final day carries the outcome, so it always gets a label — drop
+          // the mark before it rather than printing two dates on top of each other.
+          while (marks.length && extentOf(N - 1)[0] < extentOf(marks[marks.length - 1])[1] + gutter) marks.pop();
+          marks.push(N - 1);
+        }
+        marks.forEach((i) => {
+          const lab = node('text', {
+            x: xAt(i), y: baseY + 19,
+            'text-anchor': i === 0 ? 'start' : i === N - 1 ? 'end' : 'middle',
+            fill: '#8494A3', 'font-size': FS
+          });
+          lab.textContent = dayLabels[i];
+          xAxis.appendChild(lab);
+        });
+        svg.appendChild(xAxis);
+
+        // Data, painted back-to-front so the primary series reads on top.
+        const geom = series.map((s, i) => {
+          const pts = s.values.map((v, k) => [xAt(k), yAt(v)]);
+          return { s: s, i: i, st: styleOf(i), d: monotonePath(pts) };
+        });
+        geom.slice().reverse().forEach((g) => {
+          if (!g.d) return;
+          svg.appendChild(node('path', {
+            d: g.d + 'L' + xAt(N - 1).toFixed(2) + ',' + baseY + 'L' + xAt(0).toFixed(2) + ',' + baseY + 'Z',
+            fill: 'url(#asc-wash-' + g.i + ')', stroke: 'none'
+          }));
+          svg.appendChild(node('path', {
+            d: g.d, fill: 'none', stroke: g.st.line, 'stroke-width': g.st.width,
+            'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-dasharray': g.st.dash
+          }));
+        });
+
+        // One annotation only. The peak is the single point that explains this
+        // chart's shape, so it earns a label; dotting every day would just be
+        // noise, and the numbers live in the tooltip anyway.
+        const peakVals = geom.length ? geom[0].s.values : [];
+        const peakVal = peakVals.length ? Math.max.apply(null, peakVals) : 0;
+        if (peakVal > 0) {
+          const cx = xAt(peakVals.indexOf(peakVal));
+          const cy = yAt(peakVal);
+          svg.appendChild(node('circle', { cx: cx, cy: cy, r: 3.4, fill: '#ffffff', stroke: geom[0].st.line, 'stroke-width': 2 }));
+          const tag = node('text', {
+            x: Math.min(Math.max(cx, PAD_L + 16), PAD_L + plotW - 16),
+            y: Math.max(PAD_T - 13, cy - 15),
+            'text-anchor': 'middle', fill: geom[0].st.line, 'font-size': FS, 'font-weight': 700
+          });
+          tag.textContent = tr('peak') + ' ' + peakVal;
+          svg.appendChild(tag);
+        }
+
+        // Hover layer: guide + markers live in the SVG (they must track the
+        // geometry), the readout is HTML (crisp text at any chart scale).
+        const hover = node('g', { 'aria-hidden': 'true' });
+        svg.appendChild(hover);
+        svg.appendChild(node('rect', {
+          x: PAD_L - 8, y: PAD_T - 10, width: plotW + 16, height: plotH + 20,
+          fill: 'transparent', 'pointer-events': 'all'
+        }));
+
+        const unit = document.createElement('p');
+        unit.className = 'chart-unit';
+        unit.textContent = tr('Downloads per day') + ' · ' + N + ' ' + tr('days');
+        chart.appendChild(unit);
+
+        const wrap = document.createElement('div');
+        wrap.className = 'chart-wrap';
+        wrap.appendChild(svg);
+        const tip = document.createElement('div');
+        tip.className = 'chart-tip';
+        wrap.appendChild(tip);
+        chart.appendChild(wrap);
+
+        // Legend doubles as the summary: name + 30-day total, so the headline
+        // number is legible without hovering anything.
+        const legend = document.createElement('div');
+        legend.className = 'chart-legend';
+        series.forEach((s, i) => {
+          const st = styleOf(i);
+          const item = document.createElement('span');
+          item.className = 'chart-legend-item';
+          item.style.color = st.line;
+          const sw = document.createElement('i');
+          sw.className = 'chart-swatch' + (st.dash ? ' dashed' : '');
+          const nm = document.createElement('span');
+          nm.textContent = s.name;
+          const val = document.createElement('b');
+          val.textContent = String(totalOf(s));
+          item.appendChild(sw);
+          item.appendChild(nm);
+          item.appendChild(val);
+          item.title = tr('Total (30d)') + ': ' + totalOf(s);
+          legend.appendChild(item);
+        });
+        chart.appendChild(legend);
+
+        let shown = -1;
+        const hide = () => { shown = -1; hover.textContent = ''; tip.dataset.visible = '0'; };
+        const showPoint = (idx) => {
+          if (idx === shown) return;
+          shown = idx;
+          hover.textContent = '';
+          const x = xAt(idx);
+          hover.appendChild(node('line', {
+            x1: x, y1: PAD_T, x2: x, y2: baseY,
+            stroke: '#AFC0CE', 'stroke-width': 1, 'stroke-dasharray': '3 3'
+          }));
+          let highest = baseY;
+          series.forEach((s, i) => {
+            const y = yAt(s.values[idx]);
+            highest = Math.min(highest, y);
+            hover.appendChild(node('circle', { cx: x, cy: y, r: 3.6, fill: '#ffffff', stroke: styleOf(i).line, 'stroke-width': 2 }));
+          });
+          // Built from DOM nodes, never innerHTML: the app names come from App
+          // Store Connect report titles and are not ours to trust.
+          tip.textContent = '';
+          const head = document.createElement('div');
+          head.className = 'chart-tip-date';
+          head.textContent = fmtDay(dates[idx]);
+          tip.appendChild(head);
+          series.forEach((s, i) => {
+            const row = document.createElement('div');
+            row.className = 'chart-tip-row';
+            const dot = document.createElement('i');
+            dot.className = 'chart-tip-dot';
+            dot.style.background = styleOf(i).line;
+            const nm = document.createElement('span');
+            nm.textContent = s.name;
+            const val = document.createElement('span');
+            val.className = 'chart-tip-val';
+            val.textContent = String(s.values[idx]);
+            row.appendChild(dot);
+            row.appendChild(nm);
+            row.appendChild(val);
+            tip.appendChild(row);
+          });
+          // Keep the card inside the plot: pull it inboard near either end, and
+          // flip it under the markers when the point sits high on the canvas.
+          tip.style.left = Math.min(90, Math.max(10, (x / VB_W) * 100)) + '%';
+          tip.style.top = (highest / VB_H) * 100 + '%';
+          const above = (highest / VB_H) > 0.3;
+          tip.style.transform = above ? 'translate(-50%, -100%)' : 'translate(-50%, 0)';
+          tip.style.marginTop = above ? '-14px' : '14px';
+          tip.dataset.visible = '1';
+        };
+        const idxFrom = (ev) => {
+          const box = svg.getBoundingClientRect();
+          if (!box.width) return shown;
+          const local = (ev.clientX - box.left) / (box.width / VB_W);
+          return Math.round((local - PAD_L) / (plotW / Math.max(1, N - 1)));
+        };
+        const onPoint = (ev) => {
+          const i = idxFrom(ev);
+          if (i < 0 || i > N - 1) { hide(); return; }
+          showPoint(i);
+        };
+        svg.addEventListener('pointermove', onPoint);
+        // No touch-action override, so a vertical swipe still scrolls the page;
+        // a tap fires pointerdown and shows the readout for that day.
+        svg.addEventListener('pointerdown', onPoint);
+        svg.addEventListener('pointerleave', hide);
+        svg.addEventListener('pointercancel', hide);
       }
 
       renderTraction();
+
+      // The chart's viewBox is sized from its container, so it has to be rebuilt
+      // when that width changes. Debounced because a drag-resize fires hundreds
+      // of events, and re-rendering rebuilds 30 points + 2 gradients each time.
+      let chartResizeTimer = 0;
+      const redrawChart = () => {
+        clearTimeout(chartResizeTimer);
+        chartResizeTimer = setTimeout(renderTraction, 180);
+      };
+      window.addEventListener('resize', redrawChart);
+      // A closed <details> measures 0px wide, so the first render happens before
+      // the chart has a size — redraw once it is actually visible.
+      document.querySelectorAll('.traction-details').forEach((det) => {
+        det.addEventListener('toggle', () => { if (det.open) redrawChart(); });
+      });
 
       setSiteLang(siteLang, { save: false });
 
       window.addEventListener('hashchange', () => renderPage());
       renderPage({ scroll: false });
     })();
+  </script>
+
+  <script>
+  (() => {
+    // —— UV 独立访客采集（腾讯云 CloudBase · 普通云函数 + 文档型数据库）——
+    const UV_ENDPOINT = 'https://portfolio-uv-d9gkwr12q9ddbdd3d-1306214631.ap-shanghai.app.tcloudbase.com'; // CloudBase 云接入默认域名（大陆直连必达）
+    const configured = () => !!(UV_ENDPOINT && UV_ENDPOINT.startsWith('http'));
+    try {
+      if (localStorage.getItem('uv_owner_optout')) return;            // 本人排除（主）
+      if (!configured()) return;                                       // 未配置则不发请求，避免线上报错
+      const K = 'uv_vid';
+      let vid = localStorage.getItem(K);
+      if (!vid) { vid = (crypto.randomUUID ? crypto.randomUUID() : 'v_' + Math.random().toString(36).slice(2)); localStorage.setItem(K, vid); }
+      const route = location.hash || '#/home';
+      const payload = JSON.stringify({ visitorId: vid, referrer: document.referrer || '', route });
+      if (navigator.sendBeacon) navigator.sendBeacon(UV_ENDPOINT + '/count', payload);
+      else fetch(UV_ENDPOINT + '/count', { method: 'POST', body: payload, headers: { 'content-type': 'application/json' }, keepalive: true }).catch(() => {});
+      // 拉取计数渲染页脚徽标
+      fetch(UV_ENDPOINT + '/count').then((r) => r.json()).then((d) => {
+        const el = document.getElementById('uv-count');
+        if (el && d && typeof d.total === 'number') el.textContent = d.total.toLocaleString();
+      }).catch(() => {});
+      // 拉取聚合数据渲染「访客洞察」看板（计数器 + 粗略来源桶 + 停留时长）
+      fetch(UV_ENDPOINT + '/stats').then((r) => r.json()).then((d) => {
+        if (!d) return;
+        const totalEl = document.getElementById('uv-kpi-total');
+        if (totalEl && typeof d.total === 'number') totalEl.textContent = d.total.toLocaleString();
+        const durEl = document.getElementById('uv-kpi-dur');
+        if (durEl) {
+          if (d.avgDurationMs && d.avgDurationMs > 0) {
+            const s = Math.round(d.avgDurationMs / 1000);
+            durEl.innerHTML = (s >= 60 ? Math.floor(s / 60) + '<small>m</small> ' + (s % 60) : s) + '<small>s</small>';
+          } else { durEl.textContent = '—'; }
+        }
+        const el7 = document.getElementById('uv-kpi-7d');
+        if (el7 && Array.isArray(d.daily)) {
+          el7.textContent = d.daily.slice(0, 7).reduce((a, x) => a + (x.uv || 0), 0).toLocaleString();
+        }
+        const sb = document.getElementById('uv-sources');
+        if (sb && Array.isArray(d.sources) && d.sources.length) {
+          const names = { linkedin: 'LinkedIn', github: 'GitHub', search: 'Search', direct: 'Direct', other: 'Other' };
+          const max = Math.max.apply(null, d.sources.map((x) => x.c));
+          sb.innerHTML = d.sources.slice().sort((a, b) => b.c - a.c).map((x) => {
+            const pct = max ? Math.round((x.c / max) * 100) : 0;
+            return '<div class="uv-bar"><span>' + (names[x.bucket] || x.bucket) + '</span><span class="track"><span class="fill" style="width:' + pct + '%"></span></span><span class="val">' + x.c.toLocaleString() + '</span></div>';
+          }).join('');
+        }
+        const sp = document.getElementById('uv-spark');
+        if (sp && Array.isArray(d.daily) && d.daily.length) {
+          const vals = d.daily.slice().reverse().map((x) => x.uv || 0);
+          const W = 600, H = 60, maxV = Math.max.apply(null, vals) || 1;
+          const pts = vals.map((v, i) => (i * (W / (vals.length - 1 || 1))).toFixed(1) + ',' + (H - (v / maxV) * (H - 6) - 3).toFixed(1)).join(' ');
+          const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#1670b7';
+          sp.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none"><polyline points="' + pts + '" fill="none" stroke="' + accent + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="cap">近 30 日新增访客（每日去重）</div>';
+        }
+      }).catch(() => {});
+      // best-effort 会话时长（移动端不可靠，仅供参考）
+      const t0 = Date.now();
+      const sendDur = () => { try { if (navigator.sendBeacon) navigator.sendBeacon(UV_ENDPOINT + '/duration', JSON.stringify({ visitorId: vid, durationMs: Date.now() - t0 })); } catch (e) {} };
+      window.addEventListener('pagehide', sendDur);
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sendDur(); });
+    } catch (e) { /* 静默 */ }
+  })();
   </script>
 </body>
 </html>
