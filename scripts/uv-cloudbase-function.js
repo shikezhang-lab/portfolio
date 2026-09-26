@@ -6,6 +6,8 @@
 // 部署（控制台，无需本地 CLI）：
 //   1) 打开 https://tcb.cloud.tencent.com → 进入环境 portfolio-uv-d9gkwr12q9ddbdd3d
 //   2) 云数据库 → 新建集合：visits（只需这一个；daily 由聚合实时算，总数用 count()，都无需建表）
+//      ⚠️ 别删这个集合：删掉后云函数**不会**自动重建（见文件头 F23）。已加兜底（写路径补建后
+//         重试、读路径降级为 0），但最快的恢复方式始终是控制台「集合管理 → 新建集合 visits」。
 //   3) 云函数 → 新建「普通云函数」（事件函数，非 Web 云函数）→ 函数名 uv，运行时 Node.js 16/18
 //      → 粘贴本文件 → package.json 里加依赖 "@cloudbase/node-sdk":"latest" → 保存并安装依赖
 //   4) 该函数的「HTTP 访问服务 / 云接入」→ 新建路由，触发路径填 / （根）→ 得到默认域名
@@ -20,6 +22,11 @@
 // 契约：/stats 返回的 daily 恒为「按 day 升序（最旧 → 今天）」，两个后端必须一致，
 //       客户端会再按 day 排一次做防御，但不要让它依赖顺序差异。
 // 隐私：ip/ua 只存 SHA-256 哈希，不存明文。
+// 健壮性（2026-09-26，F23）：集合不存在时（首次部署还没建集合、或集合被误删），
+//   云函数**不会**自动重建 —— 读（count/aggregate）与写（doc().get()）会一起抛
+//   [ResourceNotFound] Db or Table not exist: visits，于是 /stats 与 /count 双双 500、
+//   整块看板变成「—」，而前端只当它是"没数据"。现在：读路径降级成 0，写路径就地
+//   补建集合后重试一次，保证第一个访客不会永久丢失。见 isMissingCollection/ensureCollection。
 
 const cloud = require('@cloudbase/node-sdk');
 const app = cloud.init({ env: cloud.SYMBOL_DEFAULT_ENV }); // 普通事件云函数：无需密钥
@@ -147,6 +154,48 @@ function readBody(event) {
     || null;
 }
 
+// 错误串收敛：便于线上定位，但不把整段内部文档链接原样回显给公众。
+function errText(e) {
+  return String((e && e.message) || e).slice(0, 200);
+}
+
+/**
+ * 「集合不存在」判据（2026-09-26 线上实测，见文件头 F23）。
+ *
+ * CloudBase 抛的原串形如：
+ *   [ResourceNotFound] Db or Table not exist: visits. Please check your request,
+ *   but if the problem cannot be solved, contact us. 更多错误信息请访问：…/DATABASE_COLLECTION_NOT_EXIST
+ * 两种形态都匹配：有的环境只给错误码，有的把错误码只放在链接里。
+ */
+function isMissingCollection(e) {
+  const m = String((e && (e.message || e.errMsg)) || e || '');
+  return m.indexOf('DATABASE_COLLECTION_NOT_EXIST') >= 0 || m.indexOf('Db or Table not exist') >= 0;
+}
+
+/**
+ * 就地补建集合：云函数端 SDK 与控制台是仅有的两个能建集合的入口。
+ * 集合已存在时会抛 COLLECTION_EXIST，视为成功。建不出来返回 false，交调用方降级。
+ */
+async function ensureCollection(name) {
+  if (typeof db.createCollection !== 'function') return false; // 老版本 SDK 没有这个 API
+  try { await db.createCollection(name); return true; }
+  catch (e) { return /EXIST/i.test(errText(e)); }
+}
+
+/**
+ * 聚合容错：集合不存在时当作「没有数据」返回，其余错误照抛。
+ * 没有它时，一个还没建集合的新环境打开首页就是整片 500。
+ */
+async function safeAgg(run) {
+  try {
+    const r = await run();
+    return (r && r.data) ? r : { data: [] };
+  } catch (e) {
+    if (isMissingCollection(e)) return { data: [] };
+    throw e;
+  }
+}
+
 /**
  * 独立访客总数 = visits 去重文档数。
  *
@@ -155,8 +204,13 @@ function readBody(event) {
  * 顺带把历史差值自愈回来。作品集量级下这是一次廉价读取。
  */
 async function totalVisitors() {
-  const r = await db.collection('visits').count();
-  return (r && r.total) || 0;
+  try {
+    const r = await db.collection('visits').count();
+    return (r && r.total) || 0;
+  } catch (e) {
+    if (isMissingCollection(e)) return 0; // 集合还没建 = 0 个访客，不该让整块看板跟着报错
+    throw e;
+  }
 }
 
 // 去重：_id = sha256(vid|ip)。存在则老访客；不存在才写入。
@@ -198,17 +252,18 @@ exports.main = async (event) => {
     if (path === '/stats' && method === 'GET') {
       const total = await totalVisitors();
 
-      const srcAgg = await db.collection('visits').aggregate()
-        .group({ _id: '$sourceBucket', c: agg.sum(1) }).end();
+      // 四处聚合一律经 safeAgg：集合不存在时按「没有数据」返回，而不是把整块看板打成 500
+      const srcAgg = await safeAgg(() => db.collection('visits').aggregate()
+        .group({ _id: '$sourceBucket', c: agg.sum(1) }).end());
       // routes 目前没有任何消费者（前端只画 total / daily / sources / 时长），
       // 保留是为后续看板准备的，不要误以为有人依赖它。
-      const routeAgg = await db.collection('visits').aggregate()
-        .group({ _id: '$route', c: agg.sum(1) }).sort({ c: -1 }).limit(10).end();
-      const dayAgg = await db.collection('visits').aggregate()
-        .group({ _id: '$day', c: agg.sum(1) }).end();
-      const durAgg = await db.collection('visits').aggregate()
+      const routeAgg = await safeAgg(() => db.collection('visits').aggregate()
+        .group({ _id: '$route', c: agg.sum(1) }).sort({ c: -1 }).limit(10).end());
+      const dayAgg = await safeAgg(() => db.collection('visits').aggregate()
+        .group({ _id: '$day', c: agg.sum(1) }).end());
+      const durAgg = await safeAgg(() => db.collection('visits').aggregate()
         .match({ durationMs: _.neq(null) })
-        .group({ _id: null, avg: agg.avg('$durationMs'), n: agg.sum(1) }).end();
+        .group({ _id: null, avg: agg.avg('$durationMs'), n: agg.sum(1) }).end());
 
       const dayMap = {};
       (dayAgg.data || []).forEach((x) => { if (x._id) dayMap[x._id] = x.c; });
@@ -245,17 +300,26 @@ exports.main = async (event) => {
       if (!body) return json({ error: 'unreadable-body' }, 400); // 自描述错误码，便于线上定位
       const vid = validVisitorId(body.visitorId);
       if (!vid) return json({ error: 'bad' }, 400);
+      const collect = () => recordVisit(
+        vid,
+        clientIp(headers),
+        getHeader(headers, 'user-agent'),
+        getHeader(headers, 'accept-language'),
+        body.referrer || getHeader(headers, 'referer'),
+        body.route
+      );
       let isNew = false, visitErr = null;
       try {
-        isNew = await recordVisit(
-          vid,
-          clientIp(headers),
-          getHeader(headers, 'user-agent'),
-          getHeader(headers, 'accept-language'),
-          body.referrer || getHeader(headers, 'referer'),
-          body.route
-        );
-      } catch (ve) { visitErr = String((ve && ve.message) || ve); }
+        isNew = await collect();
+      } catch (ve) {
+        if (isMissingCollection(ve)) {
+          // 集合不存在（首次部署 / 被误删）：云函数端 SDK 就地补建后重试一次。
+          // 旧行为是直接 500，且此后每一次真实访问都 500 —— 访客全静默丢失。
+          const built = await ensureCollection('visits');
+          if (built) { try { isNew = await collect(); } catch (ve2) { visitErr = errText(ve2); } }
+          else visitErr = 'collection-missing';
+        } else visitErr = errText(ve);
+      }
       const total = await totalVisitors();
       if (visitErr) return json({ error: visitErr, isNew, total }, 500);
       return json({ total, isNew });
@@ -274,12 +338,18 @@ exports.main = async (event) => {
       // 之前写成 update({ data: {...} }) —— 那是小程序客户端 SDK 的形状，
       // 在云函数里会写成一个名叫 "data" 的嵌套字段，durationMs 永远落不到顶层，
       // 于是 /stats 的 durationSample 恒为 0、停留时长 KPI 永远是「—」。
-      await db.collection('visits').doc(dedupKey).update({ durationMs: ms });
+      try {
+        await db.collection('visits').doc(dedupKey).update({ durationMs: ms });
+      } catch (de) {
+        // 集合不存在时 update 也抛。这是 best-effort 指标（前端不读响应），降级即可，不必 500。
+        if (isMissingCollection(de)) return json({ ok: false, reason: 'collection-missing' });
+        throw de;
+      }
       return json({ ok: true });
     }
 
     return json({ error: 'not found' }, 404);
   } catch (e) {
-    return json({ error: String((e && e.message) || e) }, 500);
+    return json({ error: errText(e) }, 500);
   }
 };

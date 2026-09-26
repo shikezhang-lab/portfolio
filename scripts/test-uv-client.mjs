@@ -193,5 +193,54 @@ ok(/display\s*:\s*block/.test(fillRule),
 ok(/background\s*:/.test(fillRule), 'C3 .uv-bar .fill 必须声明 background（否则填充不可见）');
 ok(/height\s*:\s*100%/.test(fillRule), 'C4 .uv-bar .fill 高度应撑满轨道');
 
+// ---------------------------------------------------------------------------
+// 用例 M：集合不存在时的降级与自愈（云函数；2026-09-26 线上实测）
+//
+// 现场：在控制台删掉 `visits` 集合后，云函数**不会**自动重建 —— /stats 与 /count
+// 一起返回 [ResourceNotFound] Db or Table not exist: visits，整块看板变成「—」，
+// 而前端只当它是"没有数据"。这里没有真数据库可跑，所以测两件能测的事：
+// 判据/降级函数的真实行为，以及「每处聚合都被 safeAgg 包住 + 写路径确实带补建重试」
+// 这个静态契约（删掉任何一处都会让整块看板再次 500）。
+const fnFrom = cfSrc.indexOf('function isMissingCollection');
+// 注意：`indexOf('function totalVisitors')` 会落在 "async function totalVisitors" 的
+// `function` 上，把 `async ` 半截留在切片尾 → 语法错误。必须连 async 一起切。
+const fnToRaw = cfSrc.indexOf('function totalVisitors');
+const fnTo = (fnToRaw >= 6 && cfSrc.startsWith('async ', fnToRaw - 6)) ? fnToRaw - 6 : fnToRaw;
+if (fnFrom < 0 || fnTo < 0 || fnTo < fnFrom) {
+  console.error('FAIL 无法从云函数里定位 isMissingCollection / safeAgg（被重命名或移动了？）');
+  process.exit(1);
+}
+const { isMissingCollection, safeAgg } = new Function(
+  cfSrc.slice(fnFrom, fnTo) + '; return { isMissingCollection, safeAgg };'
+)();
+
+// 线上原样抓下来的错误串（curl /stats 得到）
+const realErr = new Error('[ResourceNotFound] Db or Table not exist: visits. Please check your request,'
+  + ' but if the problem cannot be solved, contact us. 更多错误信息请访问：'
+  + 'https://docs.cloudbase.net/error-code/basic/DATABASE_COLLECTION_NOT_EXIST');
+
+console.log('\n--- 用例 M：集合不存在 → 降级 / 自愈契约 ---');
+ok(isMissingCollection(realErr) === true, 'M1 认得线上真实错误串（含 DATABASE_COLLECTION_NOT_EXIST）');
+ok(isMissingCollection(new Error('Db or Table not exist: visits')) === true, 'M2 认得只给「Db or Table not exist」的形态');
+ok(isMissingCollection(new Error('DATABASE_COLLECTION_NOT_EXIST')) === true, 'M3 认得只给错误码的形态');
+ok(isMissingCollection(new Error('permission denied')) === false, 'M4 不把别的数据库错误误判成「集合不存在」');
+ok(isMissingCollection(undefined) === false, 'M5 空错误对象不误判');
+
+const emptyAgg = await safeAgg(() => Promise.reject(realErr));
+ok(Array.isArray(emptyAgg.data) && emptyAgg.data.length === 0,
+  'M6 safeAgg：集合缺失时返回空结果（看板显示 0，而不是整片 500）', JSON.stringify(emptyAgg));
+let threw = false;
+try { await safeAgg(() => Promise.reject(new Error('permission denied'))); } catch { threw = true; }
+ok(threw, 'M7 safeAgg：非「集合缺失」的错误必须继续抛（不许吞掉真 bug）');
+const passedAgg = await safeAgg(() => Promise.resolve({ data: [{ c: 3 }] }));
+ok(passedAgg.data && passedAgg.data[0].c === 3, 'M8 safeAgg：正常结果原样透传');
+
+const aggCalls = (cfSrc.match(/aggregate\(\)/g) || []).length;
+const shielded = (cfSrc.match(/safeAgg\(\(\) => db\.collection\('visits'\)\.aggregate\(\)/g) || []).length;
+ok(aggCalls > 0 && aggCalls === shielded,
+  `M9 /stats 的每一处聚合都被 safeAgg 包住（${shielded}/${aggCalls}）`, `${shielded}/${aggCalls}`);
+ok(/ensureCollection\('visits'\)/.test(cfSrc), 'M10 写路径带「补建集合并重试」的自愈分支');
+ok(/isMissingCollection\(e\)\) return 0/.test(cfSrc), 'M11 totalVisitors 在集合缺失时降级为 0');
+
 console.log('\n' + (fail ? `FAIL ${fail} 项失败 / ${pass} 项通过` : `全部通过：${pass} 断言`));
 process.exit(fail ? 1 : 0);
