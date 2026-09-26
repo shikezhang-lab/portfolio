@@ -173,5 +173,25 @@ for (const [label, ev, want] of shapes) {
   ok(got === want, 'S ' + label, 'got=' + JSON.stringify(got) + ' want=' + JSON.stringify(want));
 }
 
+// ---------------------------------------------------------------------------
+// 用例 C：来源占比条的 CSS 契约（静态断言）
+//
+// 为什么需要它：`.uv-bar .fill` 是运行时用 document.createElement('span') 造的，
+// 若 CSS 只给 width/height 而不给 display，浏览器会把它当 inline 盒 ——
+// **inline 盒的 width/height 一律被忽略**，填充段恒为 0 宽。
+// 症状极具欺骗性：JS 侧 `style.width='100%'` 读出来完全正确，DOM 也齐全，
+// 页面上却是两条等长的空白轨道（看起来像"设计如此"）。
+// 这个 bug 上线存活了很久，直到有了真实数据、两条条该不一样长才暴露；
+// 上面所有断言连同三套测试全绿都抓不到它，所以在这里补一条静态契约。
+const css = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const fillRule = (css.match(/\.uv-bar \.fill\s*\{[^}]*\}/) || [''])[0];
+console.log('\n--- 用例 C：来源占比条 CSS 契约 ---');
+ok(!!fillRule, 'C1 能定位到 .uv-bar .fill 规则');
+ok(/display\s*:\s*block/.test(fillRule),
+  'C2 .uv-bar .fill 必须声明 display:block（inline 盒会忽略 width/height，填充段恒为 0 宽）',
+  fillRule.replace(/\s+/g, ' ').trim());
+ok(/background\s*:/.test(fillRule), 'C3 .uv-bar .fill 必须声明 background（否则填充不可见）');
+ok(/height\s*:\s*100%/.test(fillRule), 'C4 .uv-bar .fill 高度应撑满轨道');
+
 console.log('\n' + (fail ? `FAIL ${fail} 项失败 / ${pass} 项通过` : `全部通过：${pass} 断言`));
 process.exit(fail ? 1 : 0);
