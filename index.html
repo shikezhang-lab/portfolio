@@ -120,7 +120,7 @@
     .lang-switch button { border: 0; background: none; padding: 4px 10px; font-size: .82rem; font-weight: 700; color: var(--muted); cursor: pointer; border-radius: 2px; white-space: nowrap; }
     .lang-switch button[aria-pressed="true"] { background: var(--ink); color: var(--white); }
     .nav-lang { display: none; }
-    html[lang="zh-CN"] h1, html[lang="zh-CN"] h2, html[lang="zh-CN"] h3, html[lang="zh-CN"] .card-title { letter-spacing: 0; }
+    html[lang="zh-CN"] h1, html[lang="zh-CN"] h2, html[lang="zh-CN"] h3, html[lang="zh-CN"] .card-title, html[lang="zh-CN"] .chart-unit { letter-spacing: 0; }
     @media (max-width: 400px) { .brand { font-size: .95rem; } }
 
     /* Navbar collapses into the hamburger menu on narrower desktop widths
@@ -1702,7 +1702,7 @@
         const chartHost = document.getElementById('traction-chart');
         if (chartHost) {
           const w = Math.round(chartHost.clientWidth);
-          if (w >= 320 && chartHost.dataset.measured !== String(w)) renderTraction();
+          if (w >= 160 && chartHost.dataset.measured !== String(w)) renderTraction();
         }
         if (pendingScroll && page === 'home') {
           const target = pendingScroll;
@@ -2694,10 +2694,12 @@
         // Remembered so renderPage can tell whether the canvas was measured while
         // this page was genuinely on screen (a display:none page measures 0).
         chart.dataset.measured = String(hostW);
-        // Below ~200px the container has not been laid out yet (closed <details>,
+        // Below ~160px the container has not been laid out yet (closed <details>,
         // or a page that is display:none) — fall back to a sane canvas instead of
-        // drawing into a 3px-wide box.
-        const VB_W = hostW >= 200 ? Math.min(hostW, 1180) : 720;
+        // drawing into a 3px-wide box. The bar is deliberately low: a real 320px
+        // phone leaves ~284px, and a fallback canvas there would shrink the axis
+        // labels to ~4px.
+        const VB_W = hostW >= 160 ? Math.min(hostW, 1180) : 720;
         const compact = VB_W < 480;
         // Aspect steps with width: a narrow canvas needs a taller plot or the 30
         // daily values collapse into a flat ribbon, while a wide one becomes a
