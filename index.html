@@ -862,10 +862,10 @@
           </div>
           <div class="dropdown-group">
             <p class="dropdown-group-label">In development</p>
+            <button class="dropdown-item featured" type="button" data-go="sitepilot" role="menuitem">SitePilot ★</button>
             <button class="dropdown-item" type="button" data-go="video-sandbox" role="menuitem">Video Creation Sandbox</button>
             <button class="dropdown-item" type="button" data-go="martech-sandbox" role="menuitem">MarTech Sandbox</button>
             <button class="dropdown-item" type="button" data-go="novelstudio" role="menuitem">NovelStudio</button>
-            <button class="dropdown-item" type="button" data-go="sitepilot" role="menuitem">SitePilot</button>
           </div>
         </div>
       </div>
@@ -948,18 +948,18 @@
                 </tr>
                 <tr class="group" id="in-dev"><td colspan="5">In development</td></tr>
                 <tr>
+                  <td><strong>SitePilot ★</strong></td>
+                  <td><span class="tag">iOS</span></td>
+                  <td><span class="status-badge in-dev">In development</span></td>
+                  <td class="summary">An iOS restaurant site-evaluation tool that turns costs and operating assumptions into explainable decisions.</td>
+                  <td class="row-actions"><button class="button small" type="button" data-go="sitepilot">View case</button></td>
+                </tr>
+                <tr>
                   <td><strong>NovelStudio</strong></td>
                   <td><span class="tag">iOS</span></td>
                   <td><span class="status-badge in-dev">In development</span></td>
                   <td class="summary">An iOS writing studio with local-first notes and bring-your-own-model AI.</td>
                   <td class="row-actions"><button class="button small" type="button" data-go="novelstudio">View case</button></td>
-                </tr>
-                <tr>
-                  <td><strong>SitePilot</strong></td>
-                  <td><span class="tag">iOS</span></td>
-                  <td><span class="status-badge in-dev">In development</span></td>
-                  <td class="summary">An iOS restaurant site-evaluation tool that turns costs and operating assumptions into explainable decisions.</td>
-                  <td class="row-actions"><button class="button small" type="button" data-go="sitepilot">View case</button></td>
                 </tr>
                 <tr>
                   <td><strong>Video Creation Sandbox</strong></td>
@@ -1677,7 +1677,7 @@
       function renderPage({ scroll = true } = {}) {
         const page = currentPage();
         if (page === 'sitepilot') {
-          location.replace(`sitepilot/?lang=${document.documentElement.lang.startsWith('zh') ? 'zh' : 'en'}`);
+          location.replace('sitepilot/');
           return;
         }
         document.querySelectorAll('[data-page]').forEach((element) => {
@@ -2464,7 +2464,7 @@
       /* ASC-METRICS:END */
 
       let siteLang = 'en';
-      try { if (localStorage.getItem('site-lang') === 'zh') siteLang = 'zh'; } catch (e) {}
+      // Every page load starts in English; visitors can switch languages explicitly.
 
       const langButtons = document.querySelectorAll('[data-lang-btn]');
 
@@ -2505,7 +2505,7 @@
         translateText(lang);
         applyStoreLocale();
         renderPage({ scroll: false });
-        if (save) { try { localStorage.setItem('site-lang', lang); } catch (e) {} }
+
       }
 
       langButtons.forEach((button) => button.addEventListener('click', () => {

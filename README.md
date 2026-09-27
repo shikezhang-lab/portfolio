@@ -31,6 +31,6 @@ python3 -m http.server 8000
 
 ## SitePilot case study
 
-The approved bilingual case is published at `sitepilot/`, with seven local image assets under `sitepilot/assets/`. The existing `#/sitepilot` route forwards to this page and carries the selected language. Its header returns to the portfolio; both pages share the `site-lang` preference. The product remains in development. Architecture and interaction sequence diagrams are collapsed by default.
+The approved bilingual case is published at `sitepilot/`, with seven local image assets under `sitepilot/assets/`. The existing `#/sitepilot` route forwards to this page and opens in English. Its header returns to the portfolio; both pages default to English on every load, with a manual Chinese switch. The product remains in development and appears first with a star in both the menu and the portfolio table. Architecture and interaction sequence diagrams are collapsed by default.
 
 The standalone case has no additional visitor tracking. The home page's existing metrics and analytics remain unchanged. Internal preview materials under `outputs/` are not published.

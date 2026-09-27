@@ -18,14 +18,11 @@ function setLanguage(lang){
  document.querySelectorAll('[data-alt-en]').forEach(el=>{el.alt=index?el.dataset.altZh:el.dataset.altEn;});
  document.querySelectorAll('[data-lang]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.lang===lang)));
  document.title=index?'SitePilot — 产品案例 | Shike Zhang':'SitePilot — Case Study | Shike Zhang';
- try{localStorage.setItem('site-lang',lang)}catch{}
- const pageURL=new URL(location.href); if(pageURL.searchParams.has('lang')) {pageURL.searchParams.set('lang',lang);history.replaceState(null,'',pageURL);}
+
 }
 document.querySelectorAll('[data-lang]').forEach(el=>el.addEventListener('click',()=>setLanguage(el.dataset.lang)));
-let language='en';try{language=localStorage.getItem('site-lang')==='zh'?'zh':'en'}catch{}
-const requestedLanguage=new URLSearchParams(location.search).get('lang');
-if(requestedLanguage==='en'||requestedLanguage==='zh') language=requestedLanguage;
-setLanguage(language);
+// Every page load starts in English, including older links with a lang query.
+setLanguage('en');
 
 document.querySelectorAll('.doc-close').forEach(button=>button.addEventListener('click',()=>{
  const detail=button.closest('details');
