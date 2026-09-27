@@ -958,7 +958,7 @@
                   <td><strong>SitePilot</strong></td>
                   <td><span class="tag">iOS</span></td>
                   <td><span class="status-badge in-dev">In development</span></td>
-                  <td class="summary">An iOS copilot for field and on-site service workflows.</td>
+                  <td class="summary">An iOS restaurant site-evaluation tool that turns costs and operating assumptions into explainable decisions.</td>
                   <td class="row-actions"><button class="button small" type="button" data-go="sitepilot">View case</button></td>
                 </tr>
                 <tr>
@@ -1582,20 +1582,9 @@
         <section class="section hero case-hero">
           <p class="eyebrow">Case · In development · iOS</p>
           <h1>SitePilot</h1>
-          <p class="lead">An iOS copilot for field and on-site service workflows.</p>
-          <div class="facts">
-            <div class="fact"><span class="fact-label">Role</span><span class="fact-value">Product · Design · Build</span></div>
-            <div class="fact"><span class="fact-label">Status</span><span class="fact-value">In development</span></div>
-            <div class="fact"><span class="fact-label">Platform</span><span class="fact-value">iOS</span></div>
-            <div class="fact"><span class="fact-label">Evidence</span><span class="fact-value">Coming soon</span></div>
-          </div>
+          <p class="lead">An iOS restaurant site-evaluation tool that turns costs and operating assumptions into explainable decisions.</p>
+          <a class="button" href="sitepilot/">View case</a>
         </section>
-        <section class="section">
-          <p class="eyebrow">Status</p>
-          <h2>Case study in progress.</h2>
-          <div class="callout"><strong>Note:</strong> Full case with screenshots, feature demos, and product docs will be added once materials are shared.</div>
-        </section>
-        <div class="case-navigation"><button class="button" type="button" data-go="home">Back home</button></div>
       </div>
     </article>
 
@@ -1687,6 +1676,10 @@
 
       function renderPage({ scroll = true } = {}) {
         const page = currentPage();
+        if (page === 'sitepilot') {
+          location.replace(`sitepilot/?lang=${document.documentElement.lang.startsWith('zh') ? 'zh' : 'en'}`);
+          return;
+        }
         document.querySelectorAll('[data-page]').forEach((element) => {
           element.classList.toggle('is-active', element.dataset.page === page);
         });
@@ -2218,7 +2211,7 @@
         "Release-management case for AI-generated music as a verifiable product asset chain.": "将 AI 生成的音乐管理为可验证产品资产链的发布管理案例。",
         "A local-first dance log that turned one-tap logging into a trustworthy interaction model.": "一款本地优先的舞蹈记录应用，把一键记录打磨成可信的交互模型。",
         "An iOS writing studio with local-first notes and bring-your-own-model AI.": "一款本地优先、支持自带模型的 iOS 写作工作室。",
-        "An iOS copilot for field and on-site service workflows.": "面向现场与上门服务工作流的 iOS 智能助手。",
+        "An iOS restaurant site-evaluation tool that turns costs and operating assumptions into explainable decisions.": "面向美国市场的 iOS 餐饮选址评估工具，将成本与经营假设整理为可解释的决策流程。",
         "A three-paradigm LLM content-safety evaluation workbench.": "一套三范式的大模型内容安全评估工作台。",
         "An AI-assisted video creation sandbox currently in development.": "一个开发中的 AI 辅助视频创作沙盒。",
         "A marketing-technology middle-platform sandbox currently in development.": "一个开发中的营销技术中台沙盒。",
