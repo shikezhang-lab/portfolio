@@ -22,6 +22,16 @@ jobs:
         with:
           node-version: 22
 
+      # Gate before anything is written: a leftover identifier from a refactor
+      # (e.g. the `withD` crash) otherwise reaches index.html and gets committed.
+      # test-uv-client also covers the UV ingress normalisation (any Content-Type
+      # must yield JSON) — a broken read there silently records zero visitors.
+      - name: Run metrics tests
+        run: |
+          node scripts/test-parse.mjs
+          node scripts/test-pipeline.mjs
+          node scripts/test-uv-client.mjs
+
       - name: Fetch ASC metrics and update index.html
         env:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
