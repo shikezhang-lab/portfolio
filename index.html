@@ -1015,7 +1015,7 @@
               <tbody id="traction-raw-body"></tbody>
             </table>
             <div class="traction-chart">
-              <div class="tags"><span class="tag strong">Daily downloads</span><span class="tag">Last 30 days</span></div>
+              <div class="tags"><span class="tag strong">Cumulative downloads</span><span class="tag">Last 30 days</span></div>
               <div id="traction-chart"></div>
             </div>
           </details>
@@ -2216,7 +2216,7 @@
         "Focused launch momentum": "聚焦发布的增长势能",
         "DanceLog downloads · MoM": "DanceLog 下载量 · 环比",
         "Strongest mover this month": "本月增长最快",
-        "Daily downloads": "每日下载",
+        "Cumulative downloads": "累计下载",
         "Last 30 days": "近 30 天",
         "Daily trend appears here once the first automatic App Store Connect sync completes.": "首次自动同步 App Store Connect 数据后，这里将显示每日下载趋势。",
         "Data: App Store Connect · last 30 days · updated": "数据来源：App Store Connect · 近 30 天 · 更新于",
@@ -2230,10 +2230,10 @@
         "Impressions (30d)": "浏览量（30天）",
         "Conv.": "转化率",
         "Combined": "合计",
-        "Downloads per day": "每日下载量",
+        "cumulative": "累计",
         "days": "天",
         "peak": "峰值",
-        "Total (30d)": "近 30 天合计",
+        "Cumulative (30d)": "近 30 天累计",
         "Visitor insights": "访客洞察",
         "Unique visitors (de-duplicated)": "独立访客（已去重）",
         "Average time on site (approx.)": "平均停留时长（近似）",
@@ -2710,9 +2710,18 @@
         // colour permanently — a ranking-based palette would recolour itself on
         // every sync and break the association the copy already made.
         const rank = (k) => (k === 'dancelog' ? 0 : k === 'freestyle' ? 1 : 2);
+        // Cumulative view: this chart answers "how many downloads to date", not
+        // "how many on that day". A running sum is monotone non-decreasing by
+        // construction, so the curve can only step up — the periodic ups and
+        // downs of the daily series are exactly what this view removes. Each
+        // series is accumulated independently across the same window; the raw
+        // daily numbers still drive the KPI cards and the raw table.
+        const toCumulative = (values) => values.reduce(
+          (acc, v, i) => (acc.push((i ? acc[i - 1] : 0) + v), acc), []);
         const series = daily.series
           .map((s, i) => ({ key: s.key, name: s.name || s.key, values: s.values.map((v) => Number(v) || 0), _i: i }))
-          .sort((a, b) => (rank(a.key) - rank(b.key)) || (a._i - b._i));
+          .sort((a, b) => (rank(a.key) - rank(b.key)) || (a._i - b._i))
+          .map((s) => Object.assign({}, s, { values: toCumulative(s.values) }));
 
         // Primary: deep blue, solid, 2.25px — 9.8:1 against white. Secondary:
         // desaturated slate-blue, solid but thinner and lighter — 3.3:1. Both
@@ -2736,7 +2745,9 @@
         const yAt = (v) => baseY - ((Number(v) || 0) / scale.top) * plotH;
         const fmtDay = (d) => (d ? new Date(d + 'T00:00:00Z')
           .toLocaleDateString(locale, { month: 'short', day: 'numeric', timeZone: 'UTC' }) : '');
-        const totalOf = (s) => s.values.reduce((a, b) => a + b, 0);
+        // With cumulative values the LAST point is the window total — re-summing
+        // would report a meaningless "sum of running totals" in the legend.
+        const totalOf = (s) => (s.values.length ? s.values[s.values.length - 1] : 0);
 
         const NS = 'http://www.w3.org/2000/svg';
         const node = (name, attrs) => {
@@ -2749,10 +2760,10 @@
           viewBox: '0 0 ' + VB_W + ' ' + VB_H,
           preserveAspectRatio: 'xMidYMid meet',
           role: 'img',
-          'aria-label': tr('Downloads per day') + ', ' + N + ' ' + tr('days')
+          'aria-label': tr('Cumulative downloads') + ', ' + N + ' ' + tr('days')
         });
         const svgTitle = node('title');
-        svgTitle.textContent = tr('Downloads per day') + ', ' + N + ' ' + tr('days');
+        svgTitle.textContent = tr('Cumulative downloads') + ', ' + N + ' ' + tr('days');
         svg.appendChild(svgTitle);
 
         // Gradient anchored to each series' OWN peak, in user space. Two reasons:
@@ -2853,21 +2864,22 @@
           }));
         });
 
-        // One annotation only. The peak is the single point that explains this
-        // chart's shape, so it earns a label; dotting every day would just be
-        // noise, and the numbers live in the tooltip anyway.
-        const peakVals = geom.length ? geom[0].s.values : [];
-        const peakVal = peakVals.length ? Math.max.apply(null, peakVals) : 0;
-        if (peakVal > 0) {
-          const cx = xAt(peakVals.indexOf(peakVal));
-          const cy = yAt(peakVal);
+        // One annotation only, and in this view it belongs on the LAST point: a
+        // cumulative series ends at the window total, which is the single number
+        // this chart exists to show. (Labelling the maximum would just re-print
+        // the right-hand end of the curve.) Per-day readouts live in the tooltip.
+        const endVals = geom.length ? geom[0].s.values : [];
+        const endVal = endVals.length ? endVals[endVals.length - 1] : 0;
+        if (endVal > 0) {
+          const cx = xAt(N - 1);
+          const cy = yAt(endVal);
           svg.appendChild(node('circle', { cx: cx, cy: cy, r: 3.4, fill: '#ffffff', stroke: geom[0].st.line, 'stroke-width': 2 }));
           const tag = node('text', {
             x: Math.min(Math.max(cx, PAD_L + 16), PAD_L + plotW - 16),
             y: Math.max(PAD_T - 13, cy - 15),
             'text-anchor': 'middle', fill: geom[0].st.line, 'font-size': FS, 'font-weight': 700
           });
-          tag.textContent = tr('peak') + ' ' + peakVal;
+          tag.textContent = tr('cumulative') + ' ' + endVal;
           svg.appendChild(tag);
         }
 
@@ -2882,7 +2894,7 @@
 
         const unit = document.createElement('p');
         unit.className = 'chart-unit';
-        unit.textContent = tr('Downloads per day') + ' · ' + N + ' ' + tr('days');
+        unit.textContent = tr('Cumulative downloads') + ' · ' + N + ' ' + tr('days');
         chart.appendChild(unit);
 
         const wrap = document.createElement('div');
@@ -2911,7 +2923,7 @@
           item.appendChild(sw);
           item.appendChild(nm);
           item.appendChild(val);
-          item.title = tr('Total (30d)') + ': ' + totalOf(s);
+          item.title = tr('Cumulative (30d)') + ': ' + totalOf(s);
           legend.appendChild(item);
         });
         chart.appendChild(legend);
@@ -2938,7 +2950,7 @@
           tip.textContent = '';
           const head = document.createElement('div');
           head.className = 'chart-tip-date';
-          head.textContent = fmtDay(dates[idx]);
+          head.textContent = fmtDay(dates[idx]) + ' · ' + tr('cumulative');
           tip.appendChild(head);
           series.forEach((s, i) => {
             const row = document.createElement('div');
