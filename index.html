@@ -1560,20 +1560,8 @@
         <section class="section hero case-hero">
           <p class="eyebrow">Case · In development · iOS</p>
           <h1>NovelStudio</h1>
-          <p class="lead">An iOS writing studio with local-first notes and bring-your-own-model AI.</p>
-          <div class="facts">
-            <div class="fact"><span class="fact-label">Role</span><span class="fact-value">Product · Design · Build</span></div>
-            <div class="fact"><span class="fact-label">Status</span><span class="fact-value">In development</span></div>
-            <div class="fact"><span class="fact-label">Platform</span><span class="fact-value">iOS</span></div>
-            <div class="fact"><span class="fact-label">Evidence</span><span class="fact-value">Coming soon</span></div>
-          </div>
+          <a class="button" href="novelstudio/">View case</a>
         </section>
-        <section class="section">
-          <p class="eyebrow">Status</p>
-          <h2>Case study in progress.</h2>
-          <div class="callout"><strong>Note:</strong> Full case with screenshots, feature demos, and product docs will be added once materials are shared.</div>
-        </section>
-        <div class="case-navigation"><button class="button" type="button" data-go="home">Back home</button></div>
       </div>
     </article>
 
@@ -1676,8 +1664,8 @@
 
       function renderPage({ scroll = true } = {}) {
         const page = currentPage();
-        if (page === 'sitepilot') {
-          location.replace('sitepilot/');
+        if (page === 'sitepilot' || page === 'novelstudio') {
+          location.replace(page + '/');
           return;
         }
         document.querySelectorAll('[data-page]').forEach((element) => {
