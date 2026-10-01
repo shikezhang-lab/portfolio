@@ -17,11 +17,25 @@ function check(name, cond, extra = '') {
 }
 
 // 1) Tab-delimited downloads CSV (real Apple shape)
+// ⚠️ 窗口是按「今天」滚动的（buildWindow 默认 now = new Date()）。fixture 若写死日期，
+// 日期一旦滑出窗口，测试就会在某天突然假失败 —— 2026-10-01 真的发生过一次：
+// 写死的 2026-08-01 滑出 previous 窗口，prev 由 4 变成 0，而代码其实一直是好的。
+// ⇒ fixture 日期一律相对 NOW 生成，并与 buildWindow 共用同一个 now。
+const NOW = new Date();
+const dayAgo = (n) => {
+  const d = new Date(NOW);
+  d.setUTCDate(d.getUTCDate() - n);
+  return d.toISOString().slice(0, 10);
+};
+// current 窗口 = 往前 0~29 天；previous 窗口 = 往前 30~59 天
+const D_CUR_A = dayAgo(3);    // 13
+const D_CUR_B = dayAgo(2);    // 9
+const D_PREV = dayAgo(45);    // 4
 const tab = [
   'Date\tApp Name\tApp Apple Identifier\tDownload Type\tApp Version\tDevice\tPlatform\tCount',
-  '2026-09-22\tDanceLog\t6795164130\tDownloads\t1.2\tiPhone 15\tiOS\t13',
-  '2026-09-21\tDanceLog\t6795164130\tDownloads\t1.2\tiPhone 15\tiOS\t9',
-  '2026-08-01\tDanceLog\t6795164130\tDownloads\t1.1\tiPhone 15\tiOS\t4'
+  `${D_CUR_A}\tDanceLog\t6795164130\tDownloads\t1.2\tiPhone 15\tiOS\t13`,
+  `${D_CUR_B}\tDanceLog\t6795164130\tDownloads\t1.2\tiPhone 15\tiOS\t9`,
+  `${D_PREV}\tDanceLog\t6795164130\tDownloads\t1.1\tiPhone 15\tiOS\t4`
 ].join('\n');
 const rows = parseCsv(tab);
 const header = rows[0].map(h => h.trim().toLowerCase());
@@ -39,9 +53,14 @@ for (const r of rows.slice(1)) {
   if (!day || Number.isNaN(v)) continue;
   byDay.set(day, (byDay.get(day) || 0) + v);
 }
-const dates = buildWindow();
+const dates = buildWindow(NOW);
 const current = dates.slice(30);      // most recent 30 (fixed direction)
 const previous = dates.slice(0, 30);
+check('fixture 日期确实落在预期窗口内（否则下面两条会假失败）',
+  current.includes(D_CUR_A) && current.includes(D_CUR_B) && previous.includes(D_PREV),
+  `current=${current[0]}..${current[current.length - 1]} ` +
+  `previous=${previous[0]}..${previous[previous.length - 1]} ` +
+  `fixture=${D_CUR_A},${D_CUR_B},${D_PREV}`);
 const cur = sumWindow(byDay, current);
 const prev = sumWindow(byDay, previous);
 check('tab CSV sums real counts in recent window (22)', cur === 22, 'got ' + cur);
