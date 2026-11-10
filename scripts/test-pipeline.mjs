@@ -220,6 +220,8 @@ check('site: KPI values are clamped to non-negative / 0-100%',
   site.includes('Math.max(0, o[k])') && site.includes('Math.min(100, Math.max(0, Math.round(share)))'));
 check('site: legacy 30d snapshot fields are still read (no blank cards between syncs)',
   site.includes("'downloads30d'") && site.includes("'impressions30d'"));
+check('site: no misleading conversion-rate column (different windows for numerator/denominator)',
+  !site.includes('<th>Conv.</th>') && !site.includes('const conv ='));
 
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log(failed === 0 ? '\nALL PIPELINE TESTS PASS' : `\n${failed} PIPELINE TEST(S) FAILED`);

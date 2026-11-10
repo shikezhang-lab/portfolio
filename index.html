@@ -1017,7 +1017,7 @@
             <summary>View the raw numbers</summary>
             <table class="traction-raw">
               <thead>
-                <tr><th>App</th><th data-window="th-downloads">Downloads (90d)</th><th data-window="th-impressions">Impressions (90d)</th><th>Conv.</th></tr>
+                <tr><th>App</th><th data-window="th-downloads">Downloads (90d)</th><th data-window="th-impressions">Impressions (90d)</th></tr>
               </thead>
               <tbody id="traction-raw-body"></tbody>
             </table>
@@ -2228,7 +2228,6 @@
         "Real scale, stated plainly:": "真实量级，如实说明：",
         "View the raw numbers": "查看原始数据",
         "App": "应用",
-        "Conv.": "转化率",
         "Combined": "合计",
         "cumulative": "累计",
         "days": "天",
@@ -2963,7 +2962,11 @@
         });
         const cell = (text) => { const td = document.createElement('td'); td.textContent = text; return td; };
         const fmt = (n) => (typeof n === 'number' ? n.toLocaleString() : '—');
-        const conv = (d, i) => (typeof d === 'number' && typeof i === 'number' && i > 0 ? (Math.round((d / i) * 1000) / 10) + '%' : '—');
+        // Deliberately NO conversion-rate column: downloads come from Sales &
+        // Trends across the whole window, while impressions come from a single
+        // Analytics DAILY instance. Dividing the two produced a meaningless
+        // 87.5% once the window grew to 90 days. Never publish a ratio whose
+        // numerator and denominator cover different periods.
         const rawBody = document.getElementById('traction-raw-body');
         if (rawBody) {
           rawBody.textContent = '';
@@ -2976,7 +2979,6 @@
             tr.appendChild(cell(labelFor(a)));
             tr.appendChild(cell(fmt(aD)));
             tr.appendChild(cell(fmt(aI)));
-            tr.appendChild(cell(conv(aD, aI)));
             rawBody.appendChild(tr);
           });
           const trt = document.createElement('tr');
@@ -2984,7 +2986,6 @@
           trt.appendChild(cell('Combined'));
           trt.appendChild(cell(hasD ? fmt(totalD) : '—'));
           trt.appendChild(cell(hasI ? fmt(totalI) : '—'));
-          trt.appendChild(cell(hasD && hasI ? conv(totalD, totalI) : '—'));
           rawBody.appendChild(trt);
         }
         const chart = document.getElementById('traction-chart');
