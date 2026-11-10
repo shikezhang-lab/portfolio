@@ -989,12 +989,12 @@
 
         <section class="section" id="traction">
           <p class="eyebrow">Traction</p>
-          <h2>Early momentum across two live apps.</h2>
+          <h2>Early traction across two live apps.</h2>
           <div class="traction-grid">
             <div class="kpi-card">
-              <strong class="kpi-num accent" id="kpi-growth">+733%</strong>
-              <span class="kpi-label">Downloads growth · month over month</span>
-              <span class="kpi-sub">Both apps combined · last 30 days</span>
+              <strong class="kpi-num accent" id="kpi-total">—</strong>
+              <span class="kpi-label">Cumulative downloads · both apps</span>
+              <span class="kpi-sub" data-window="kpi-total">Both apps combined · last 90 days</span>
             </div>
             <div class="kpi-card">
               <strong class="kpi-num">2</strong>
@@ -1002,31 +1002,31 @@
               <span class="kpi-sub">Freestyle Challenge · DanceLog</span>
             </div>
             <div class="kpi-card">
-              <strong class="kpi-num" id="kpi-share">88%</strong>
-              <span class="kpi-label">of recent downloads on DanceLog</span>
-              <span class="kpi-sub">Focused launch momentum</span>
+              <strong class="kpi-num" id="kpi-share">—</strong>
+              <span class="kpi-label">of downloads on DanceLog</span>
+              <span class="kpi-sub" data-window="kpi-share">Share of the 90-day total</span>
             </div>
             <div class="kpi-card">
-              <strong class="kpi-num" id="kpi-dancelog">+633%</strong>
-              <span class="kpi-label">DanceLog downloads · MoM</span>
-              <span class="kpi-sub">Strongest mover this month</span>
+              <strong class="kpi-num" id="kpi-dancelog">—</strong>
+              <span class="kpi-label">DanceLog · cumulative downloads</span>
+              <span class="kpi-sub" data-window="kpi-dancelog">Last 90 days · cumulative</span>
             </div>
           </div>
-          <p class="traction-honest">Real scale, stated plainly: <strong id="traction-abs">—</strong> organic installs across both apps in the last 30 days, with $0 paid marketing. Early-validation stage — the signal that matters is retention &amp; engagement quality, not volume yet.</p>
+          <p class="traction-honest"><span>Real scale, stated plainly:</span> <strong id="traction-abs">—</strong> <span data-window="honest">organic installs across both apps in the last 90 days, with $0 paid marketing. Early-validation stage — the signal that matters is retention &amp; engagement quality, not volume yet.</span></p>
           <details class="traction-details">
             <summary>View the raw numbers</summary>
             <table class="traction-raw">
               <thead>
-                <tr><th>App</th><th>Downloads (30d)</th><th>Impressions (30d)</th><th>Conv.</th></tr>
+                <tr><th>App</th><th data-window="th-downloads">Downloads (90d)</th><th data-window="th-impressions">Impressions (90d)</th><th>Conv.</th></tr>
               </thead>
               <tbody id="traction-raw-body"></tbody>
             </table>
             <div class="traction-chart">
-              <div class="tags"><span class="tag strong">Cumulative downloads</span><span class="tag">Last 30 days</span></div>
+              <div class="tags"><span class="tag strong">Cumulative downloads</span><span class="tag" data-window="chart-tag">Last 90 days</span></div>
               <div id="traction-chart"></div>
             </div>
           </details>
-          <p class="traction-source">Data: App Store Connect · last 30 days · updated <span id="traction-updated">2026-09-20</span></p>
+          <p class="traction-source"><span data-window="source">Data: App Store Connect · last 90 days · updated</span> <span id="traction-updated">—</span></p>
         </section>
 
         <section class="section" id="featured">
@@ -1465,7 +1465,7 @@
           <div class="facts">
             <div class="fact"><span class="fact-label">Role</span><span class="fact-value">Product · Design · Build</span></div>
             <div class="fact"><span class="fact-label">Status</span><span class="fact-value">Shipped</span></div>
-            <div class="fact"><span class="fact-label">Traction</span><span class="fact-value" data-traction="dancelog">+633% downloads · MoM</span></div>
+            <div class="fact"><span class="fact-label">Traction</span><span class="fact-value" data-traction="dancelog">Early traction</span></div>
             <div class="fact"><span class="fact-label">Data</span><span class="fact-value">fully local</span></div>
             <div class="fact"><span class="fact-label">Evidence</span><span class="fact-value">App Store · Tests · Device UAT</span></div>
           </div>
@@ -2217,32 +2217,22 @@
         "Product": "作品",
         "Safety Sandbox ★": "安全沙盒 ★",
         "Traction": "增长数据",
-        "Early momentum across two live apps.": "两款已上架应用的正增长势头。",
-        "Downloads growth · month over month": "下载量环比增长",
-        "Both apps combined · last 30 days": "两款应用合计 · 近 30 天",
+        "Early traction across two live apps.": "两款已上架应用的早期数据。",
+        "Cumulative downloads · both apps": "两款应用累计下载量",
         "Live iOS apps on the App Store": "App Store 在架 iOS 应用",
-        "of recent downloads on DanceLog": "的近期下载来自 DanceLog",
-        "Focused launch momentum": "聚焦发布的增长势能",
-        "DanceLog downloads · MoM": "DanceLog 下载量 · 环比",
-        "Strongest mover this month": "本月增长最快",
+        "of downloads on DanceLog": "的下载来自 DanceLog",
+        "DanceLog · cumulative downloads": "DanceLog · 累计下载量",
         "Cumulative downloads": "累计下载",
-        "Last 30 days": "近 30 天",
         "Daily trend appears here once the first automatic App Store Connect sync completes.": "首次自动同步 App Store Connect 数据后，这里将显示每日下载趋势。",
-        "Data: App Store Connect · last 30 days · updated": "数据来源：App Store Connect · 近 30 天 · 更新于",
-        "downloads · MoM": "下载量 · 环比",
         "Early traction": "早期增长中",
         "Real scale, stated plainly:": "真实量级，如实说明：",
-        "organic installs across both apps in the last 30 days, with $0 paid marketing. Early-validation stage — the signal that matters is retention & engagement quality, not volume yet.": "近 30 天两款应用合计的有机（自然）安装量，零付费投放。处于早期验证阶段——真正有价值的信号是留存与参与度质量，而非量级。",
         "View the raw numbers": "查看原始数据",
         "App": "应用",
-        "Downloads (30d)": "下载量（30天）",
-        "Impressions (30d)": "浏览量（30天）",
         "Conv.": "转化率",
         "Combined": "合计",
         "cumulative": "累计",
         "days": "天",
         "peak": "峰值",
-        "Cumulative (30d)": "近 30 天累计",
         "Visitor insights": "访客洞察",
         "Unique visitors (de-duplicated)": "独立访客（已去重）",
         "Average time on site (approx.)": "平均停留时长（近似）",
@@ -2591,35 +2581,78 @@
         return d;
       }
 
+      // Every "last N days" caption is derived from the snapshot, not hardcoded:
+      // it is the next scheduled sync that actually lengthens the data window to
+      // 90 days. Until then an older 30-day snapshot must SAY 30 days — printing
+      // "90 days" over 30 daily points would be a lie. Templates are translated
+      // here because the number is injected at runtime and translateText only
+      // matches whole literal strings.
+      const WINDOW_COPY = {
+        'kpi-total':      { en: 'Both apps combined · last {n} days', zh: '两款应用合计 · 近 {n} 天' },
+        'kpi-share':      { en: 'Share of the {n}-day total', zh: '占近 {n} 天总量的比例' },
+        'kpi-dancelog':   { en: 'Last {n} days · cumulative', zh: '近 {n} 天 · 累计' },
+        'honest':         { en: 'organic installs across both apps in the last {n} days, with $0 paid marketing. Early-validation stage — the signal that matters is retention & engagement quality, not volume yet.', zh: '近 {n} 天两款应用合计的有机（自然）安装量，零付费投放。处于早期验证阶段——真正有价值的信号是留存与参与度质量，而非量级。' },
+        'th-downloads':   { en: 'Downloads ({n}d)', zh: '下载量（{n}天）' },
+        'th-impressions': { en: 'Impressions ({n}d)', zh: '浏览量（{n}天）' },
+        'chart-tag':      { en: 'Last {n} days', zh: '近 {n} 天' },
+        'source':         { en: 'Data: App Store Connect · last {n} days · updated', zh: '数据来源：App Store Connect · 近 {n} 天 · 更新于' },
+        'legend':         { en: 'Cumulative ({n}d)', zh: '近 {n} 天累计' },
+        'fact':           { en: '{v} downloads · {n}d', zh: '{v} 次下载 · 近 {n} 天' }
+      };
+      const winText = (kind, n, v) => {
+        const t = (WINDOW_COPY[kind] || {})[siteLang === 'zh' ? 'zh' : 'en'] || '';
+        return t.replace(/\{n\}/g, n).replace(/\{v\}/g, v == null ? '' : v);
+      };
+
       function renderTraction() {
         const m = ASC_METRICS;
         if (!m) return;
         const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
-        const pct = (v) => (v > 0 ? '+' : '') + v + '%';
-        if (m.updatedAt) set('traction-updated', m.updatedAt);
-        // Never leave a hardcoded placeholder ("+733%") on the page when the
-        // sync has no number to show — a stale fake figure is worse than "—".
-        if (m.totals && typeof m.totals.downloadsMoMPct === 'number') set('kpi-growth', pct(m.totals.downloadsMoMPct));
-        else set('kpi-growth', '—');
-        if (m.totals && typeof m.totals.downloads30d === 'number') set('traction-abs', m.totals.downloads30d.toLocaleString());
-        else set('traction-abs', '—');
+        // A snapshot written before the 90-day switch still carries downloads30d
+        // / impressions30d (and a downloadsMoMPct we no longer display). Accept
+        // the old names so the cards never blank out while the sync catches up.
+        const dl = (o) => {
+          if (!o) return null;
+          for (const k of ['downloadsWindow', 'downloads90d', 'downloads30d']) {
+            if (typeof o[k] === 'number' && Number.isFinite(o[k])) return Math.max(0, o[k]);
+          }
+          return null;
+        };
+        const imp = (o) => {
+          if (!o) return null;
+          for (const k of ['impressionsWindow', 'impressions90d', 'impressions30d']) {
+            if (typeof o[k] === 'number' && Number.isFinite(o[k])) return Math.max(0, o[k]);
+          }
+          return null;
+        };
         const apps = m.apps || [];
         const byKey = (key) => apps.find((a) => a.key === key);
         const dancelog = byKey('dancelog');
-        set('kpi-share', dancelog && typeof dancelog.sharePct === 'number' ? dancelog.sharePct + '%' : '—');
-        set('kpi-dancelog', dancelog && typeof dancelog.downloadsMoMPct === 'number' ? pct(dancelog.downloadsMoMPct) : '—');
+        const datesLen = m.daily && Array.isArray(m.daily.dates) ? m.daily.dates.length : 0;
+        const W = Number(m.windowDays) || datesLen || 90;
+        document.querySelectorAll('[data-window]').forEach((el) => {
+          el.textContent = winText(el.dataset.window, W);
+        });
+        if (m.updatedAt) set('traction-updated', m.updatedAt);
+        // Cumulative counts only: no period-over-period percentage is published,
+        // so a KPI card can never show a negative number again.
+        const reportedTotal = dl(m.totals);
+        const hasTotal = reportedTotal !== null || apps.some((a) => dl(a) !== null);
+        const total = reportedTotal !== null ? reportedTotal
+          : apps.reduce((acc, a) => acc + (dl(a) || 0), 0);
+        set('kpi-total', hasTotal ? total.toLocaleString() : '—');
+        set('traction-abs', hasTotal ? total.toLocaleString() : '—');
+        const dancelogTotal = dl(dancelog);
+        set('kpi-dancelog', dancelogTotal !== null ? dancelogTotal.toLocaleString() : '—');
+        const share = dancelog && typeof dancelog.sharePct === 'number' && Number.isFinite(dancelog.sharePct)
+          ? dancelog.sharePct
+          : (total > 0 && dancelogTotal !== null ? Math.round((dancelogTotal / total) * 100) : null);
+        set('kpi-share', share !== null ? Math.min(100, Math.max(0, Math.round(share))) + '%' : '—');
         document.querySelectorAll('[data-traction]').forEach((el) => {
           const app = byKey(el.dataset.traction);
           if (!app) return;
-          if (typeof app.downloadsMoMPct === 'number') {
-            el.innerHTML = '';
-            const strong = document.createElement('strong');
-            strong.textContent = pct(app.downloadsMoMPct);
-            el.appendChild(strong);
-            el.appendChild(document.createTextNode(' downloads · MoM'));
-          } else {
-            el.textContent = 'Early traction';
-          }
+          const n = dl(app);
+          el.textContent = n !== null ? winText('fact', W, n) : tr('Early traction');
         });
         const APP_NAMES = { dancelog: 'DanceLog', freestyle: 'Freestyle Challenge' };
         const labelFor = (a) => a.name || APP_NAMES[a.key] || a.key;
@@ -2639,13 +2672,14 @@
           rawBody.textContent = '';
           let totalD = 0, totalI = 0, hasD = false, hasI = false;
           apps.forEach((a) => {
-            if (typeof a.downloads30d === 'number') { totalD += a.downloads30d; hasD = true; }
-            if (typeof a.impressions30d === 'number') { totalI += a.impressions30d; hasI = true; }
+            const aD = dl(a), aI = imp(a);
+            if (aD !== null) { totalD += aD; hasD = true; }
+            if (aI !== null) { totalI += aI; hasI = true; }
             const tr = document.createElement('tr');
             tr.appendChild(cell(labelFor(a)));
-            tr.appendChild(cell(fmt(a.downloads30d)));
-            tr.appendChild(cell(fmt(a.impressions30d)));
-            tr.appendChild(cell(conv(a.downloads30d, a.impressions30d)));
+            tr.appendChild(cell(fmt(aD)));
+            tr.appendChild(cell(fmt(aI)));
+            tr.appendChild(cell(conv(aD, aI)));
             rawBody.appendChild(tr);
           });
           const trt = document.createElement('tr');
@@ -2701,7 +2735,7 @@
         // labels to ~4px.
         const VB_W = hostW >= 160 ? Math.min(hostW, 1180) : 720;
         const compact = VB_W < 480;
-        // Aspect steps with width: a narrow canvas needs a taller plot or the 30
+        // Aspect steps with width: a narrow canvas needs a taller plot or the
         // daily values collapse into a flat ribbon, while a wide one becomes a
         // wall of chart. A single hard breakpoint failed both ends.
         const aspect = VB_W < 480 ? 1.9 : VB_W < 760 ? 2.5 : 3.1;
@@ -2724,7 +2758,7 @@
         // construction, so the curve can only step up — the periodic ups and
         // downs of the daily series are exactly what this view removes. Each
         // series is accumulated independently across the same window; the raw
-        // daily numbers still drive the KPI cards and the raw table.
+        // daily numbers still drive the raw table.
         const toCumulative = (values) => values.reduce(
           (acc, v, i) => (acc.push((i ? acc[i - 1] : 0) + v), acc), []);
         const series = daily.series
@@ -2914,7 +2948,7 @@
         wrap.appendChild(tip);
         chart.appendChild(wrap);
 
-        // Legend doubles as the summary: name + 30-day total, so the headline
+        // Legend doubles as the summary: name + window total, so the headline
         // number is legible without hovering anything.
         const legend = document.createElement('div');
         legend.className = 'chart-legend';
@@ -2932,7 +2966,7 @@
           item.appendChild(sw);
           item.appendChild(nm);
           item.appendChild(val);
-          item.title = tr('Cumulative (30d)') + ': ' + totalOf(s);
+          item.title = winText('legend', W) + ': ' + totalOf(s);
           legend.appendChild(item);
         });
         chart.appendChild(legend);
@@ -3009,7 +3043,7 @@
 
       // The chart's viewBox is sized from its container, so it has to be rebuilt
       // when that width changes. Debounced because a drag-resize fires hundreds
-      // of events, and re-rendering rebuilds 30 points + 2 gradients each time.
+      // of events, and re-rendering rebuilds the whole series + gradients each time.
       let chartResizeTimer = 0;
       const redrawChart = () => {
         clearTimeout(chartResizeTimer);

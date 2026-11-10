@@ -29,7 +29,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const API = 'https://api.appstoreconnect.apple.com';
 const APP_IDS = (process.env.ASC_APP_IDS || '6796975099,6795164130').split(',').map(s => s.trim()).filter(Boolean);
-const WINDOW = 30; // days
+// The Traction section publishes CUMULATIVE totals over one window. There is
+// deliberately no "previous window" comparison: month-over-month percentages
+// can be negative (the site showed -62% and -73%), which reads as decline even
+// when the absolute install count is growing. 90 days also smooths the sparse
+// early-stage data enough that one quiet week does not dominate the picture.
+const WINDOW = 90; // days
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Overridable so the end-to-end smoke test (scripts/test-pipeline.mjs) can run
 // main() against a throwaway copy instead of the real index.html.
@@ -115,9 +120,10 @@ function parseCsv(text) {
 
 function dayKey(d) { return d.toISOString().slice(0, 10); }
 
+/** WINDOW consecutive days, oldest -> newest, ending at `now`. */
 function buildWindow(now = new Date()) {
   const dates = [];
-  for (let i = WINDOW * 2 - 1; i >= 0; i--) {
+  for (let i = WINDOW - 1; i >= 0; i--) {
     const d = new Date(now); d.setUTCDate(d.getUTCDate() - i);
     dates.push(dayKey(d));
   }
@@ -274,16 +280,11 @@ function sumWindow(byDay, dates) {
   return dates.reduce((acc, d) => acc + (byDay.get(d) || 0), 0);
 }
 
-function moM(current, previous) {
-  if (!previous || previous <= 0) return null;
-  return Math.round(((current - previous) / previous) * 100);
-}
-
-/** 60-day window (oldest -> newest) ending at `latest` (inclusive). */
+/** WINDOW-day window (oldest -> newest) ending at `latest` (inclusive). */
 function windowEndingAt(latest) {
   const end = new Date(latest + 'T00:00:00Z');
   const dates = [];
-  for (let i = 59; i >= 0; i--) {
+  for (let i = WINDOW - 1; i >= 0; i--) {
     const d = new Date(end); d.setUTCDate(d.getUTCDate() - i);
     dates.push(dayKey(d));
   }
@@ -446,7 +447,7 @@ async function fetchSalesDaily(token, vendorNumber, date) {
 
 /**
  * Sales & Trends downloads: returns { latest, byApp } where byApp maps
- * appleId -> { byDay: Map(day -> units), title } over the 60-day window
+ * appleId -> { byDay: Map(day -> units), title } over the WINDOW-day window
  * ending at the latest available report date (same ending date as the
  * "App 销量" card in the ASC backend).
  */
@@ -483,8 +484,8 @@ async function fetchSalesUnits(token, vendorNumber) {
     }
   }
   for (const [appId, entry] of byApp) {
-    const cur = sumWindow(entry.byDay, dates.slice(30));
-    console.log('  sales app ' + appId + ' (' + entry.title + '): last-30d units = ' + cur);
+    const cur = sumWindow(entry.byDay, dates);
+    console.log('  sales app ' + appId + ' (' + entry.title + '): last-' + WINDOW + 'd units = ' + cur);
   }
   return { latest, dates, byApp };
 }
@@ -522,10 +523,9 @@ async function main() {
   }
 
   const dates = sales ? sales.dates : buildWindow();
-  // dates is built oldest -> newest, so the CURRENT window is the LAST 30
-  // entries (most recent 30 days); the first 30 are the previous window.
-  const current = dates.slice(WINDOW);
-  const previous = dates.slice(0, WINDOW);
+  // One window only: every published number is a cumulative total over these
+  // dates. No comparison window, hence no percentage that can turn negative.
+  const current = dates;
 
   const appResults = [];
   for (const appId of APP_IDS) {
@@ -564,13 +564,12 @@ async function main() {
   // Absolute totals are accumulated here (single pass) instead of being
   // re-derived from a filtered array — the previous `apps.indexOf(a)` lookup
   // was both O(n²) and easy to get wrong.
-  let totalCur = 0, totalPrev = 0, totalImpCur = 0;
+  let totalCur = 0, totalImpCur = 0;
   const apps = entries.map((e, i) => {
     const key = keys[i];
     const curD = e.downloads ? sumWindow(e.downloads.byDay, current) : null;
-    const prevD = e.downloads ? sumWindow(e.downloads.byDay, previous) : null;
     const curI = e.impressions ? sumWindow(e.impressions.byDay, current) : null;
-    if (typeof curD === 'number') { totalCur += curD; totalPrev += prevD || 0; }
+    if (typeof curD === 'number') { totalCur += curD; }
     if (typeof curI === 'number') { totalImpCur += curI; }
     return {
       key,
@@ -578,19 +577,21 @@ async function main() {
       // is only used for apps we have no label for.
       name: APP_LABEL[key] || e.titles[0] || key,
       appleId: e.appleId,
-      downloadsMoMPct: typeof curD === 'number' ? moM(curD, prevD) : null,
       sharePct: null,
-      downloads30d: curD,
-      impressions30d: curI,
+      // Window-length-independent names: changing WINDOW never renames a
+      // published field. The site still accepts the legacy *30d names so a
+      // snapshot written before the switch keeps rendering.
+      downloadsWindow: curD,
+      impressionsWindow: curI,
       daily: e.downloads ? current.map(d => e.downloads.byDay.get(d) || 0) : null
     };
   });
   for (const a of apps) {
-    if (totalCur > 0 && typeof a.downloads30d === 'number') a.sharePct = Math.round((a.downloads30d / totalCur) * 100);
+    if (totalCur > 0 && typeof a.downloadsWindow === 'number') a.sharePct = Math.round((a.downloadsWindow / totalCur) * 100);
   }
 
   // Coverage diagnostics. "0 downloads" and "the report file is missing for
-  // those days" look identical on the site, so print the distinction: a 30-day
+  // those days" look identical on the site, so print the distinction: a long
   // window backed by only a handful of rows is a data-collection problem, not a
   // product signal, and should be visible in the workflow log.
   apps.forEach((a, i) => {
@@ -602,7 +603,7 @@ async function main() {
     if (storeTitle && !titleAgreesWithKey(a.key, storeTitle)) {
       console.log(`  WARNING: store title "${storeTitle}" does not look like "${APP_LABEL[a.key] || a.key}" (appleId ${a.appleId}) — verify APP_KEY_BY_APPLE_ID`);
     }
-    console.log(`  ${a.key} (${a.appleId}): downloads30d=${a.downloads30d} impressions30d=${a.impressions30d}`
+    console.log(`  ${a.key} (${a.appleId}): downloadsWindow=${a.downloadsWindow} impressionsWindow=${a.impressionsWindow}`
       + ` — downloads seen on ${daysWithData}/${WINDOW} days`);
   });
 
@@ -613,15 +614,14 @@ async function main() {
     source: sales ? 'sales-and-trends' : 'analytics-reports',
     windowDays: WINDOW,
     totals: {
-      downloadsMoMPct: moM(totalCur, totalPrev),
-      downloads30d: totalCur > 0 ? totalCur : null,
-      impressions30d: totalImpCur > 0 ? totalImpCur : null
+      downloadsWindow: totalCur > 0 ? totalCur : null,
+      impressionsWindow: totalImpCur > 0 ? totalImpCur : null
     },
     apps,
     // Built from the app list (never hardcoded keys) so a key remap or a third
     // app can no longer produce a null series / a silently missing line.
     daily: buildDailySeries(current, apps),
-    impressions: totalImpCur > 0 ? { source: 'analytics-reports', total30d: totalImpCur } : null
+    impressions: totalImpCur > 0 ? { source: 'analytics-reports', totalWindow: totalImpCur } : null
   };
 
   const start = '/* ASC-METRICS:START';
@@ -642,7 +642,7 @@ async function main() {
 // Only run when executed directly (node scripts/update-metrics.mjs); when
 // imported (e.g. by tests) just expose the pure helpers.
 export {
-  parseCsv, sumWindow, buildWindow, moM, windowEndingAt, unitsFromSalesRows,
+  parseCsv, sumWindow, buildWindow, windowEndingAt, unitsFromSalesRows,
   appKeyFor, uniqueAppKeys, buildDailySeries, seriesFromAnalyticsRows, main
 };
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {

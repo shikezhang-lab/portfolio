@@ -164,10 +164,16 @@ check('closing marker is wrapped in a comment', html.includes('/* ' + end), html
 
 if (data) {
   check('sales units: DanceLog = 23 (20 + 3, the 7F update row excluded)',
-    data.apps.find(x => x.key === 'dancelog')?.downloads30d === 23,
-    JSON.stringify(data.apps.map(x => [x.key, x.downloads30d])));
-  check('sales units: Freestyle = 3', data.apps.find(x => x.key === 'freestyle')?.downloads30d === 3);
-  check('totals.downloads30d = 26', data.totals.downloads30d === 26, String(data.totals.downloads30d));
+    data.apps.find(x => x.key === 'dancelog')?.downloadsWindow === 23,
+    JSON.stringify(data.apps.map(x => [x.key, x.downloadsWindow])));
+  check('sales units: Freestyle = 3', data.apps.find(x => x.key === 'freestyle')?.downloadsWindow === 3);
+  check('totals.downloadsWindow = 26', data.totals.downloadsWindow === 26, String(data.totals.downloadsWindow));
+  check('windowDays is 90', data.windowDays === 90, String(data.windowDays));
+  check('chart payload spans the full 90-day window',
+    data.daily?.dates?.length === 90 && (data.daily?.series || []).every(s => s.values.length === 90),
+    'dates=' + data.daily?.dates?.length + ' series=' + JSON.stringify((data.daily?.series || []).map(s => s.values.length)));
+  check('no MoM / negative growth field is published any more',
+    !JSON.stringify(data).includes('MoM'), JSON.stringify(data.totals));
   check('both apps survive with distinct keys',
     data.apps.length === 2 && new Set(data.apps.map(x => x.key)).size === 2,
     JSON.stringify(data.apps.map(x => x.key)));
@@ -180,14 +186,33 @@ if (data) {
   check('chart series carry their own names',
     (data.daily?.series || []).every(s => typeof s.name === 'string' && s.name.length));
   check('impressions exclude page views: DanceLog = 100 (not 399)',
-    data.apps.find(x => x.key === 'dancelog')?.impressions30d === 100,
-    String(data.apps.find(x => x.key === 'dancelog')?.impressions30d));
+    data.apps.find(x => x.key === 'dancelog')?.impressionsWindow === 100,
+    String(data.apps.find(x => x.key === 'dancelog')?.impressionsWindow));
   check('impressions exclude page views: Freestyle = 25 (not 102)',
-    data.apps.find(x => x.key === 'freestyle')?.impressions30d === 25,
-    String(data.apps.find(x => x.key === 'freestyle')?.impressions30d));
+    data.apps.find(x => x.key === 'freestyle')?.impressionsWindow === 25,
+    String(data.apps.find(x => x.key === 'freestyle')?.impressionsWindow));
   check('source is sales-and-trends', data.source === 'sales-and-trends', data.source);
   check('updatedAt is the latest available report date', data.updatedAt === LATEST, data.updatedAt);
 }
+
+// ------------------------------------------------- front-end contract
+// The data pipeline and the page must agree. A refactor that reintroduces a
+// month-over-month percentage would put a negative number back in a KPI card
+// (the exact -62% / -73% regression this change removes), so guard it here.
+const site = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+check('site: KPI cards are cumulative counts, not MoM percentages',
+  site.includes('id="kpi-total"') && !site.includes('id="kpi-growth"') &&
+  site.includes('Cumulative downloads · both apps'));
+check('site: no hardcoded 30-day caption remains in the Traction section',
+  !site.includes('Downloads (30d)') && !site.includes('Cumulative (30d)') &&
+  !site.includes('month over month') && !site.includes('+733%'));
+check('site: window captions are data-driven (snapshot decides 30 vs 90 days)',
+  site.includes('data-window=') && site.includes('WINDOW_COPY') &&
+  site.includes('Number(m.windowDays)'));
+check('site: KPI values are clamped to non-negative / 0-100%',
+  site.includes('Math.max(0, o[k])') && site.includes('Math.min(100, Math.max(0, Math.round(share)))'));
+check('site: legacy 30d snapshot fields are still read (no blank cards between syncs)',
+  site.includes("'downloads30d'") && site.includes("'impressions30d'"));
 
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log(failed === 0 ? '\nALL PIPELINE TESTS PASS' : `\n${failed} PIPELINE TEST(S) FAILED`);

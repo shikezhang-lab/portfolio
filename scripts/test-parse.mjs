@@ -21,21 +21,23 @@ function check(name, cond, extra = '') {
 // 日期一旦滑出窗口，测试就会在某天突然假失败 —— 2026-10-01 真的发生过一次：
 // 写死的 2026-08-01 滑出 previous 窗口，prev 由 4 变成 0，而代码其实一直是好的。
 // ⇒ fixture 日期一律相对 NOW 生成，并与 buildWindow 共用同一个 now。
+// 2026-11-10 起窗口改为「单一 90 天累计窗口」（不再有 previous / MoM），
+// 所以窗口外的 fixture 必须落在 NOW-90 天之前，否则会污染合计。
 const NOW = new Date();
 const dayAgo = (n) => {
   const d = new Date(NOW);
   d.setUTCDate(d.getUTCDate() - n);
   return d.toISOString().slice(0, 10);
 };
-// current 窗口 = 往前 0~29 天；previous 窗口 = 往前 30~59 天
+// 累计窗口 = 往前 0~89 天；窗口外 = 往前 120 天
 const D_CUR_A = dayAgo(3);    // 13
 const D_CUR_B = dayAgo(2);    // 9
-const D_PREV = dayAgo(45);    // 4
+const D_OUT = dayAgo(120);    // 4（窗口外，必须被排除）
 const tab = [
   'Date\tApp Name\tApp Apple Identifier\tDownload Type\tApp Version\tDevice\tPlatform\tCount',
   `${D_CUR_A}\tDanceLog\t6795164130\tDownloads\t1.2\tiPhone 15\tiOS\t13`,
   `${D_CUR_B}\tDanceLog\t6795164130\tDownloads\t1.2\tiPhone 15\tiOS\t9`,
-  `${D_PREV}\tDanceLog\t6795164130\tDownloads\t1.1\tiPhone 15\tiOS\t4`
+  `${D_OUT}\tDanceLog\t6795164130\tDownloads\t1.1\tiPhone 15\tiOS\t4`
 ].join('\n');
 const rows = parseCsv(tab);
 const header = rows[0].map(h => h.trim().toLowerCase());
@@ -54,17 +56,14 @@ for (const r of rows.slice(1)) {
   byDay.set(day, (byDay.get(day) || 0) + v);
 }
 const dates = buildWindow(NOW);
-const current = dates.slice(30);      // most recent 30 (fixed direction)
-const previous = dates.slice(0, 30);
-check('fixture 日期确实落在预期窗口内（否则下面两条会假失败）',
-  current.includes(D_CUR_A) && current.includes(D_CUR_B) && previous.includes(D_PREV),
-  `current=${current[0]}..${current[current.length - 1]} ` +
-  `previous=${previous[0]}..${previous[previous.length - 1]} ` +
-  `fixture=${D_CUR_A},${D_CUR_B},${D_PREV}`);
-const cur = sumWindow(byDay, current);
-const prev = sumWindow(byDay, previous);
-check('tab CSV sums real counts in recent window (22)', cur === 22, 'got ' + cur);
-check('older row lands in previous window (4)', prev === 4, 'got ' + prev);
+check('window is exactly 90 days', dates.length === 90, 'got ' + dates.length);
+check('fixture 日期确实落在预期窗口内 / 外（否则下面两条会假失败）',
+  dates.includes(D_CUR_A) && dates.includes(D_CUR_B) && !dates.includes(D_OUT),
+  `window=${dates[0]}..${dates[dates.length - 1]} fixture=${D_CUR_A},${D_CUR_B},${D_OUT}`);
+const cur = sumWindow(byDay, dates);
+check('tab CSV sums real counts inside the 90-day window (22)', cur === 22, 'got ' + cur);
+check('row older than 90 days is excluded, but still sums on its own (4)',
+  !dates.includes(D_OUT) && sumWindow(byDay, [D_OUT]) === 4, 'got ' + sumWindow(byDay, [D_OUT]));
 
 // 2) Comma-delimited CSV still works
 const comma = 'Date,App Name,Impressions\n2026-09-22,DanceLog,510\n';
@@ -92,11 +91,12 @@ check('sales: Dance Log units = 23', units.get('6795164130')?.units === 23, JSON
 check('sales: Freestyle units = 3 (update rows excluded)', units.get('6796975099')?.units === 3, JSON.stringify([...units]));
 check('sales: title captured for key mapping', /dance/i.test(units.get('6795164130')?.title || ''), units.get('6795164130')?.title);
 
-// 5) windowEndingAt: 60 days ending at `latest`, oldest -> newest
+// 5) windowEndingAt: 90 days ending at `latest`, oldest -> newest
 const w = windowEndingAt('2026-09-22');
-check('windowEndingAt length 60', w.length === 60, 'got ' + w.length);
-check('windowEndingAt ends at latest, oldest-first', w[59] === '2026-09-22' && w[0] === '2026-07-25',
-  w[0] + ' .. ' + w[59]);
+const expectedStart = (() => { const d = new Date('2026-09-22T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 89); return d.toISOString().slice(0, 10); })();
+check('windowEndingAt length 90', w.length === 90, 'got ' + w.length);
+check('windowEndingAt ends at latest, oldest-first', w[89] === '2026-09-22' && w[0] === expectedStart,
+  w[0] + ' .. ' + w[89] + ' (expected ' + expectedStart + ')');
 
 // 6) App key mapping. Regression: /dance/ was tested FIRST, and the Freestyle
 //    app's store title is "Freestyle Dance Challenge" — so both apps resolved to
