@@ -7,7 +7,8 @@
 
 import {
   parseCsv, sumWindow, buildWindow, unitsFromSalesRows, windowEndingAt,
-  appKeyFor, uniqueAppKeys, buildDailySeries, seriesFromAnalyticsRows
+  appKeyFor, uniqueAppKeys, buildDailySeries, seriesFromAnalyticsRows,
+  mergeStoreApps
 } from './update-metrics.mjs';
 
 let failed = 0;
@@ -193,5 +194,46 @@ check('analytics: download rows are not event-filtered',
 
 check('analytics: no date column -> no series, never a guess',
   seriesFromAnalyticsRows(parseCsv('Foo\tBar\n1\t2')) === null);
+
+// N) Public App Store discovery: the "live apps" count comes from the store,
+// not from a hand-maintained ID list. The first lookup result is the DEVELOPER
+// header (wrapperType: artist) — counting it would report one app too many.
+const software = (id, name, date) => ({
+  wrapperType: 'software', kind: 'software', trackId: id, trackName: name,
+  bundleId: 'com.test.' + id, releaseDate: date + 'T07:00:00Z', version: '1.0',
+  trackViewUrl: 'https://apps.apple.com/us/app/x/id' + id + '?uo=4'
+});
+const ARTIST = { wrapperType: 'artist', artistId: 6795014821, artistName: 'Shike Zhang' };
+const US = { resultCount: 4, results: [
+  ARTIST,
+  software(6795164130, 'Dance Log', '2026-08-06'),
+  software(6796975099, 'Freestyle Dance Challenge', '2026-08-24'),
+  software(6811473992, 'SitePilot - Restaurant Lease', '2026-11-05')
+]};
+// CN storefront has no SitePilot: a CN-only lookup would undercount by one.
+const CN = { resultCount: 3, results: [
+  ARTIST,
+  software(6795164130, 'Dance Log', '2026-08-06'),
+  software(6796975099, 'Freestyle Dance Challenge', '2026-08-24')
+]};
+const merged = mergeStoreApps([US, CN]);
+check('store discovery: 3 live apps (artist header excluded)', merged.length === 3,
+  JSON.stringify(merged.map(a => a.appleId)));
+check('store discovery: US-only third app survives the merge',
+  merged.some(a => a.appleId === '6811473992'),
+  JSON.stringify(merged.map(a => a.appleId)));
+check('store discovery: developer header never becomes an app',
+  !merged.some(a => a.appleId === '6795014821'));
+check('store discovery: cross-storefront duplicates are de-duplicated',
+  merged.filter(a => a.appleId === '6795164130').length === 1);
+check('store discovery: sorted oldest-first by release date',
+  merged[0].released === '2026-08-06' && merged[2].released === '2026-11-05',
+  JSON.stringify(merged.map(a => a.released)));
+check('store discovery: tracking query is stripped from links',
+  merged.every(a => !a.url.includes('uo=4')), JSON.stringify(merged.map(a => a.url)));
+check('store discovery: empty / missing payloads are harmless',
+  mergeStoreApps([null, { results: [] }, undefined]).length === 0);
+check('store discovery: malformed rows without trackId are skipped',
+  mergeStoreApps([{ results: [ARTIST, { wrapperType: 'software', trackName: 'Ghost' }] }]).length === 0);
 
 process.exit(failed);

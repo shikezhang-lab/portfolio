@@ -953,14 +953,14 @@
                   <td class="summary">A local-first dance log that turned one-tap logging into a trustworthy interaction model.</td>
                   <td class="row-actions"><a class="button small" href="https://apps.apple.com/us/app/dance-log/id6795164130" target="_blank" rel="noopener noreferrer">App Store</a><button class="button small" type="button" data-go="dancelog">View case</button></td>
                 </tr>
-                <tr class="group" id="in-dev"><td colspan="5">In development</td></tr>
                 <tr>
                   <td><strong>SitePilot ★</strong></td>
                   <td><span class="tag">iOS</span></td>
-                  <td><span class="status-badge in-dev">In development</span></td>
+                  <td><span class="status-badge published">Live</span></td>
                   <td class="summary">An iOS restaurant site-evaluation tool that turns costs and operating assumptions into explainable decisions.</td>
-                  <td class="row-actions"><button class="button small" type="button" data-go="sitepilot">View case</button></td>
+                  <td class="row-actions"><a class="button small" href="https://apps.apple.com/us/app/sitepilot-restaurant-lease/id6811473992" target="_blank" rel="noopener noreferrer">App Store</a><button class="button small" type="button" data-go="sitepilot">View case</button></td>
                 </tr>
+                <tr class="group" id="in-dev"><td colspan="5">In development</td></tr>
                 <tr>
                   <td><strong>NovelStudio</strong></td>
                   <td><span class="tag">iOS</span></td>
@@ -989,17 +989,17 @@
 
         <section class="section" id="traction">
           <p class="eyebrow">Traction</p>
-          <h2>Early traction across two live apps.</h2>
+          <h2>Early traction across the live app lineup.</h2>
           <div class="traction-grid">
             <div class="kpi-card">
               <strong class="kpi-num accent" id="kpi-total">—</strong>
-              <span class="kpi-label">Cumulative downloads · both apps</span>
-              <span class="kpi-sub" data-window="kpi-total">Both apps combined · last 90 days</span>
+              <span class="kpi-label">Cumulative downloads · all apps</span>
+              <span class="kpi-sub" data-window="kpi-total">All live apps combined · last 90 days</span>
             </div>
             <div class="kpi-card">
-              <strong class="kpi-num">2</strong>
+              <strong class="kpi-num" id="kpi-appcount">—</strong>
               <span class="kpi-label">Live iOS apps on the App Store</span>
-              <span class="kpi-sub">Freestyle Challenge · DanceLog</span>
+              <span class="kpi-sub" id="kpi-appnames">Verified from the App Store</span>
             </div>
             <div class="kpi-card">
               <strong class="kpi-num" id="kpi-share">—</strong>
@@ -1012,7 +1012,7 @@
               <span class="kpi-sub" data-window="kpi-dancelog">Last 90 days · cumulative</span>
             </div>
           </div>
-          <p class="traction-honest"><span>Real scale, stated plainly:</span> <strong id="traction-abs">—</strong> <span data-window="honest">organic installs across both apps in the last 90 days, with $0 paid marketing. Early-validation stage — the signal that matters is retention &amp; engagement quality, not volume yet.</span></p>
+          <p class="traction-honest"><span>Real scale, stated plainly:</span> <strong id="traction-abs">—</strong> <span data-window="honest">organic installs across all live apps in the last 90 days, with $0 paid marketing. Early-validation stage — the signal that matters is retention &amp; engagement quality, not volume yet.</span></p>
           <details class="traction-details">
             <summary>View the raw numbers</summary>
             <table class="traction-raw">
@@ -1575,10 +1575,10 @@
     <article class="page" data-page="sitepilot">
       <div class="container">
         <section class="section hero case-hero">
-          <p class="eyebrow">Case · In development · iOS</p>
+          <p class="eyebrow">Case · Shipped · iOS</p>
           <h1>SitePilot</h1>
           <p class="lead">An iOS restaurant site-evaluation tool that turns costs and operating assumptions into explainable decisions.</p>
-          <a class="button" href="sitepilot/">View case</a>
+          <div class="actions"><a class="button" href="sitepilot/">View case</a><a class="button" href="https://apps.apple.com/us/app/sitepilot-restaurant-lease/id6811473992" target="_blank" rel="noopener noreferrer">View on the App Store ↗</a></div>
         </section>
       </div>
     </article>
@@ -2213,12 +2213,13 @@
         "An AI-assisted video creation sandbox currently in development.": "一个开发中的 AI 辅助视频创作沙盒。",
         "A marketing-technology middle-platform sandbox currently in development.": "一个开发中的营销技术中台沙盒。",
         "Case · In development · iOS": "案例 · 开发中 · iOS",
+        "Case · Shipped · iOS": "案例 · 已上架 · iOS",
         "Case · In development · Web": "案例 · 开发中 · Web",
         "Product": "作品",
         "Safety Sandbox ★": "安全沙盒 ★",
         "Traction": "增长数据",
-        "Early traction across two live apps.": "两款已上架应用的早期数据。",
-        "Cumulative downloads · both apps": "两款应用累计下载量",
+        "Early traction across the live app lineup.": "已上架应用的早期数据。",
+        "Cumulative downloads · all apps": "全部应用累计下载量",
         "Live iOS apps on the App Store": "App Store 在架 iOS 应用",
         "of downloads on DanceLog": "的下载来自 DanceLog",
         "DanceLog · cumulative downloads": "DanceLog · 累计下载量",
@@ -2884,10 +2885,13 @@
       // here because the number is injected at runtime and translateText only
       // matches whole literal strings.
       const WINDOW_COPY = {
-        'kpi-total':      { en: 'Both apps combined · last {n} days', zh: '两款应用合计 · 近 {n} 天' },
+        'kpi-total':      { en: 'All live apps combined · last {n} days', zh: '全部在架应用合计 · 近 {n} 天' },
         'kpi-share':      { en: 'Share of the {n}-day total', zh: '占近 {n} 天总量的比例' },
         'kpi-dancelog':   { en: 'Last {n} days · cumulative', zh: '近 {n} 天 · 累计' },
-        'honest':         { en: 'organic installs across both apps in the last {n} days, with $0 paid marketing. Early-validation stage — the signal that matters is retention & engagement quality, not volume yet.', zh: '近 {n} 天两款应用合计的有机（自然）安装量，零付费投放。处于早期验证阶段——真正有价值的信号是留存与参与度质量，而非量级。' },
+        'honest':         { en: 'organic installs across all live apps in the last {n} days, with $0 paid marketing. Early-validation stage — the signal that matters is retention & engagement quality, not volume yet.', zh: '近 {n} 天全部在架应用合计的有机（自然）安装量，零付费投放。处于早期验证阶段——真正有价值的信号是留存与参与度质量，而非量级。' },
+        // {n} here is the number of LIVE APPS, not the window length. renderTraction
+        // passes the store count explicitly; this element is not [data-window].
+        'appcount':       { en: '{n} live apps · verified from the App Store', zh: '{n} 款在架 · 数据源自 App Store' },
         'th-downloads':   { en: 'Downloads ({n}d)', zh: '下载量（{n}天）' },
         'th-impressions': { en: 'Impressions ({n}d)', zh: '浏览量（{n}天）' },
         'chart-tag':      { en: 'Last {n} days', zh: '近 {n} 天' },
@@ -2929,6 +2933,20 @@
         document.querySelectorAll('[data-window]').forEach((el) => {
           el.textContent = winText(el.dataset.window, W);
         });
+        // "Live apps" comes from the public App Store lookup embedded by the
+        // sync, NOT from the number of rows in the sales report (which lags a
+        // new launch by weeks). Fall back to the snapshot's app list, then to
+        // "—" — never to a hardcoded 2.
+        const storeApps = Array.isArray(m.storeApps) ? m.storeApps : [];
+        const liveCount = Number(m.liveAppCount) || storeApps.length || apps.length;
+        set('kpi-appcount', liveCount > 0 ? String(liveCount) : '—');
+        const appNamesEl = document.getElementById('kpi-appnames');
+        if (appNamesEl) {
+          appNamesEl.textContent = liveCount > 0 ? winText('appcount', liveCount)
+            : (siteLang === 'zh' ? '数据源自 App Store' : 'Verified from the App Store');
+          const names = (storeApps.length ? storeApps.map((a) => a.name) : apps.map((a) => a.name)).filter(Boolean);
+          if (names.length) appNamesEl.title = names.join(' · ');
+        }
         if (m.updatedAt) set('traction-updated', m.updatedAt);
         // Cumulative counts only: no period-over-period percentage is published,
         // so a KPI card can never show a negative number again.
@@ -2950,7 +2968,7 @@
           const n = dl(app);
           el.textContent = n !== null ? winText('fact', W, n) : tr('Early traction');
         });
-        const APP_NAMES = { dancelog: 'DanceLog', freestyle: 'Freestyle Challenge' };
+        const APP_NAMES = { dancelog: 'DanceLog', freestyle: 'Freestyle Challenge', sitepilot: 'SitePilot' };
         const labelFor = (a) => a.name || APP_NAMES[a.key] || a.key;
         // A duplicate key means the sync mapped two apps to the same identity —
         // it used to be invisible (rows silently shared a label, the chart lost
@@ -3067,14 +3085,14 @@
         // Primary: deep blue, solid, 2.25px — 9.8:1 against white. Secondary:
         // desaturated slate-blue, solid but thinner and lighter — 3.3:1. Both
         // clear the 3:1 bar for meaningful graphics. The hierarchy is carried by
-        // lightness and weight rather than by hue alone, so the two series stay
-        // separable in greyscale too. (Deliberately NOT dashed: a dashed line
-        // reads as "forecast" in this kind of chart, and both series are measured
-        // actuals. A dash pattern is held in reserve for a third app.)
+        // Different hues AND lightness/weight, so the series stay separable in
+        // greyscale too. Every line is SOLID: a dash reads as "forecast" in this
+        // kind of chart, and all series are measured actuals — including the
+        // third app's flat zero line right after launch.
         const SERIES_STYLE = [
           { line: '#0C447C', wash: 0.28, width: 2.25, dash: null },
           { line: '#5E8FBE', wash: 0.22, width: 1.6, dash: null },
-          { line: '#9DB6CE', wash: 0.15, width: 1.5, dash: '2 3' }
+          { line: '#B4762F', wash: 0.16, width: 1.6, dash: null }
         ];
         const styleOf = (i) => SERIES_STYLE[i % SERIES_STYLE.length];
 

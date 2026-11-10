@@ -209,7 +209,7 @@ if (data) {
 const site = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 check('site: KPI cards are cumulative counts, not MoM percentages',
   site.includes('id="kpi-total"') && !site.includes('id="kpi-growth"') &&
-  site.includes('Cumulative downloads · both apps'));
+  site.includes('Cumulative downloads · all apps'));
 check('site: no hardcoded 30-day caption remains in the Traction section',
   !site.includes('Downloads (30d)') && !site.includes('Cumulative (30d)') &&
   !site.includes('month over month') && !site.includes('+733%'));
@@ -222,6 +222,93 @@ check('site: legacy 30d snapshot fields are still read (no blank cards between s
   site.includes("'downloads30d'") && site.includes("'impressions30d'"));
 check('site: no misleading conversion-rate column (different windows for numerator/denominator)',
   !site.includes('<th>Conv.</th>') && !site.includes('const conv ='));
+check('site: live-app count is data-driven, never a hardcoded 2',
+  site.includes('id="kpi-appcount"') && site.includes('Number(m.liveAppCount)') &&
+  !site.includes('<strong class="kpi-num">2</strong>'));
+check('site: no "two apps / both apps" copy is left in the Traction section',
+  !site.includes('two live apps') && !site.includes('both apps'));
+check('site: third app has a display name and every series is a solid measured line',
+  site.includes("sitepilot: 'SitePilot'") && !site.includes("dash: '2 3'"));
+
+// ------------------------------------- second run: auto-discovery (3 apps)
+// Pure-helper tests cannot catch a stale identifier inside main(), so really
+// EXECUTE the discovery path: drop the ID override, stub the public store
+// lookup, run main() again and read the snapshot it writes.
+const SITEPILOT = '6811473992';
+const storeApp = (id, name, released) => ({
+  wrapperType: 'software', kind: 'software', trackId: Number(id), trackName: name,
+  bundleId: 'com.test.' + id, releaseDate: released + 'T07:00:00Z', version: '1.0',
+  trackViewUrl: 'https://apps.apple.com/us/app/x/id' + id + '?uo=4'
+});
+const ARTIST = { wrapperType: 'artist', artistId: 6795014821, artistName: 'Shike Zhang' };
+const STORE_US = { resultCount: 4, results: [
+  ARTIST,
+  storeApp(DANCELOG, 'Dance Log', '2026-08-06'),
+  storeApp(FREESTYLE, 'Freestyle Dance Challenge', '2026-08-24'),
+  storeApp(SITEPILOT, 'SitePilot - Restaurant Lease', '2026-11-05')
+]};
+// SitePilot is US-only. Merging storefronts must not lose it.
+const STORE_CN = { resultCount: 3, results: [
+  ARTIST,
+  storeApp(DANCELOG, 'Dance Log', '2026-08-06'),
+  storeApp(FREESTYLE, 'Freestyle Dance Challenge', '2026-08-24')
+]};
+delete process.env.ASC_APP_IDS;
+const baseFetch = globalThis.fetch;
+globalThis.fetch = async (url, opts) => {
+  const u = String(url);
+  if (u.includes('itunes.apple.com/lookup')) {
+    const payload = u.includes('country=us') ? STORE_US : STORE_CN;
+    return { ok: true, status: 200, text: async () => JSON.stringify(payload) };
+  }
+  // A brand-new app has no analytics report request yet. A 404 must NOT drop
+  // its Sales & Trends row (that used to lose the whole app).
+  if (u.includes(SITEPILOT)) return { ok: false, status: 404, text: async () => 'no report' };
+  return baseFetch(url, opts);
+};
+let threw2 = null;
+try { await mod.main(); } catch (err) { threw2 = err; }
+check('auto-discovery: main() completes without throwing', threw2 === null, threw2 && threw2.message);
+
+const html2 = fs.readFileSync(indexFile, 'utf8');
+const assign2 = html2.indexOf('const ASC_METRICS = ');
+const obj2 = html2.indexOf('{', assign2);
+let depth2 = 0, end2 = -1;
+for (let i = obj2; i < html2.length; i++) {
+  if (html2[i] === '{') depth2++;
+  else if (html2[i] === '}') { depth2--; if (depth2 === 0) { end2 = i; break; } }
+}
+let data2 = null;
+try { data2 = JSON.parse(html2.slice(obj2, end2 + 1)); }
+catch (err) { console.log('  JSON.parse #2 failed: ' + err.message); }
+check('auto-discovery: written block is valid JSON', data2 !== null);
+if (data2) {
+  check('auto-discovery: liveAppCount = 3 (from the App Store, not the sales report)',
+    data2.liveAppCount === 3, String(data2.liveAppCount));
+  check('auto-discovery: storeApps keeps the US-only third app',
+    (data2.storeApps || []).length === 3 && data2.storeApps.some(a => a.appleId === SITEPILOT),
+    JSON.stringify((data2.storeApps || []).map(a => a.appleId)));
+  check('auto-discovery: artist header is not published as an app',
+    !(data2.storeApps || []).some(a => a.appleId === '6795014821'));
+  check('auto-discovery: 3 apps AND 3 chart series',
+    data2.apps.length === 3 && (data2.daily?.series || []).length === 3,
+    'apps=' + data2.apps.length + ' series=' + (data2.daily?.series || []).length);
+  check('auto-discovery: third app resolves to the sitepilot key',
+    data2.apps.find(a => a.appleId === SITEPILOT)?.key === 'sitepilot',
+    JSON.stringify(data2.apps.map(a => [a.appleId, a.key])));
+  check('auto-discovery: third app shows 0 downloads (launched after the report window)',
+    data2.apps.find(a => a.appleId === SITEPILOT)?.downloadsWindow === 0,
+    String(data2.apps.find(a => a.appleId === SITEPILOT)?.downloadsWindow));
+  check('auto-discovery: missing analytics report does NOT drop the third app',
+    data2.apps.some(a => a.appleId === SITEPILOT) &&
+    data2.apps.find(a => a.appleId === SITEPILOT).impressionsWindow === null,
+    JSON.stringify(data2.apps.find(a => a.appleId === SITEPILOT)));
+  check('auto-discovery: original two apps keep their numbers',
+    data2.totals.downloadsWindow === 26, String(data2.totals.downloadsWindow));
+  check('auto-discovery: store links have no tracking query',
+    (data2.storeApps || []).every(a => !a.url.includes('uo=4')));
+}
+globalThis.fetch = baseFetch;
 
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log(failed === 0 ? '\nALL PIPELINE TESTS PASS' : `\n${failed} PIPELINE TEST(S) FAILED`);

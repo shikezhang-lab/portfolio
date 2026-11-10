@@ -8,7 +8,12 @@
  *   ASC_KEY_ID       – App Store Connect API Key ID
  *   ASC_PRIVATE_KEY  – Contents of the .p8 file (\n escapes are fine)
  * Optional env:
- *   ASC_APP_IDS       – comma-separated Apple IDs (default: 6796975099,6795164130)
+ *   ASC_APP_IDS       – comma-separated Apple IDs. When omitted the script
+ *                       AUTO-DISCOVERS every app currently on sale from the
+ *                       public App Store lookup (itunes.apple.com), so a newly
+ *                       shipped app needs no code change.
+ *   ASC_ARTIST_ID     – developer artist ID for that lookup (default 6795014821)
+ *   ASC_STORE_COUNTRIES – comma-separated storefronts to merge (default us,cn)
  *   ASC_VENDOR_NUMBER – vendor number (8 digits, shown in Agreements, Tax and
  *                       Banking). When set, downloads come from Sales &
  *                       Trends DAILY reports — the SAME source as the
@@ -28,7 +33,21 @@ import zlib from 'node:zlib';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const API = 'https://api.appstoreconnect.apple.com';
-const APP_IDS = (process.env.ASC_APP_IDS || '6796975099,6795164130').split(',').map(s => s.trim()).filter(Boolean);
+const ITUNES = 'https://itunes.apple.com/lookup';
+// Public App Store endpoint, no credentials: listing a developer's live
+// software returns the authoritative Apple IDs + first-release dates. Used to
+// discover new apps instead of hand-editing an ID list every time one ships.
+const STORE_ARTIST_ID = process.env.ASC_ARTIST_ID || '6795014821';
+// Storefronts differ: SitePilot is US-only and would be missed by a CN lookup.
+// Merge several so "live apps" does not silently depend on one country.
+const STORE_COUNTRIES = (process.env.ASC_STORE_COUNTRIES || 'us,cn').split(',').map(s => s.trim()).filter(Boolean);
+// Last-resort list, used only if the public lookup is unreachable from CI.
+// It includes the third app because falling back to the old TWO IDs would
+// reintroduce exactly the stale "2 live apps" number this change removes.
+const FALLBACK_APP_IDS = ['6796975099', '6795164130', '6811473992'];
+// Resolved in main() from the store lookup; ASC_APP_IDS still wins (the offline
+// pipeline test uses it to avoid any network call).
+let APP_IDS = (process.env.ASC_APP_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
 // The Traction section publishes CUMULATIVE totals over one window. There is
 // deliberately no "previous window" comparison: month-over-month percentages
 // can be negative (the site showed -62% and -73%), which reads as decline even
@@ -107,6 +126,78 @@ async function api(token, pathName, options = {}) {
     }
   }
   throw new Error('fetch failed after 3 attempts: ' + netCause(lastErr));
+}
+
+/**
+ * Pure: merge several storefront lookup payloads into one de-duplicated list
+ * of LIVE apps. The first result is `wrapperType: "artist"` (the developer
+ * header) and MUST be skipped or the app count is off by one. First storefront
+ * wins for an ID; later ones only contribute apps missing from the first.
+ */
+function mergeStoreApps(payloads) {
+  const byId = new Map();
+  for (const payload of payloads) {
+    const results = payload && Array.isArray(payload.results) ? payload.results : [];
+    for (const r of results) {
+      if (r.wrapperType !== 'software' || !r.trackId) continue;
+      const id = String(r.trackId);
+      if (byId.has(id)) continue;
+      byId.set(id, {
+        appleId: id,
+        name: r.trackName || id,
+        bundleId: r.bundleId || '',
+        released: String(r.releaseDate || '').slice(0, 10),
+        version: r.version || '',
+        url: String(r.trackViewUrl || '').replace(/\?uo=4$/, '')
+      });
+    }
+  }
+  return [...byId.values()].sort((a, b) =>
+    a.released.localeCompare(b.released) || a.appleId.localeCompare(b.appleId));
+}
+
+/** Fetch all live apps from the public App Store (no ASC credentials needed). */
+async function fetchLiveApps() {
+  const payloads = [];
+  for (const country of STORE_COUNTRIES) {
+    const url = ITUNES + '?id=' + encodeURIComponent(STORE_ARTIST_ID)
+      + '&entity=software&country=' + encodeURIComponent(country) + '&limit=200';
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      // .text() + JSON.parse, not .json(): the offline pipeline stub implements
+      // text()/arrayBuffer() only, and this keeps the code testable that way.
+      payloads.push(JSON.parse(await res.text()));
+    } catch (err) {
+      console.log('  WARNING: App Store lookup (' + country + ') failed: ' + String(err.message).slice(0, 140));
+    }
+  }
+  return mergeStoreApps(payloads);
+}
+
+/** Resolve which Apple IDs to publish. Returns the storefront metadata too. */
+async function resolveAppIds() {
+  // Re-read the env on EVERY call instead of trusting the module-level value:
+  // main() can run more than once in a process (the pipeline test does), and a
+  // stale list from the first run would make the second one skip discovery.
+  const override = (process.env.ASC_APP_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (override.length) {
+    APP_IDS = override;
+    console.log('  app list: ASC_APP_IDS override = ' + APP_IDS.join(','));
+    return [];
+  }
+  let storeApps = [];
+  try { storeApps = await fetchLiveApps(); }
+  catch (err) { console.log('  WARNING: App Store discovery failed: ' + err.message); }
+  if (!storeApps.length) {
+    console.log('  WARNING: no live apps returned by the App Store — using the built-in ID list');
+    APP_IDS = FALLBACK_APP_IDS.slice();
+  } else {
+    APP_IDS = storeApps.map(a => a.appleId);
+    console.log('  app list: App Store lookup found ' + APP_IDS.length + ' live apps: '
+      + storeApps.map(a => a.name + ' (' + a.appleId + ')').join(' | '));
+  }
+  return storeApps;
 }
 
 function parseCsv(text) {
@@ -343,11 +434,14 @@ function unitsFromSalesRows(rows) {
  */
 const APP_KEY_BY_TITLE = [
   { key: 'freestyle', re: /freestyle|challenge/i }, // must precede dancelog
-  { key: 'dancelog', re: /dance\s*log|dancelog/i }
+  { key: 'dancelog', re: /dance\s*log|dancelog/i },
+  { key: 'sitepilot', re: /sitepilot/i }
 ];
-const APP_KEY_BY_APPLE_ID = { '6796975099': 'freestyle', '6795164130': 'dancelog' };
+const APP_KEY_BY_APPLE_ID = {
+  '6796975099': 'freestyle', '6795164130': 'dancelog', '6811473992': 'sitepilot'
+};
 /** Display names — kept in sync with the site so the table/legend branding is stable. */
-const APP_LABEL = { freestyle: 'Freestyle Challenge', dancelog: 'DanceLog' };
+const APP_LABEL = { freestyle: 'Freestyle Challenge', dancelog: 'DanceLog', sitepilot: 'SitePilot' };
 
 function appKeyFor(appleId, titles = []) {
   // Apple ID first: for apps we track it is authoritative and cannot be renamed
@@ -476,6 +570,7 @@ async function fetchSalesUnits(token, vendorNumber) {
   console.log('  sales: latest available DAILY report = ' + latest);
   const dates = windowEndingAt(latest);
   const byApp = new Map();
+  const ignored = new Set();
   for (const date of dates) {
     let csv;
     try { csv = await fetchSalesDaily(token, vendorNumber, date); }
@@ -485,7 +580,16 @@ async function fetchSalesUnits(token, vendorNumber) {
     try { units = unitsFromSalesRows(csv); }
     catch (err) { console.log('  sales ' + date + ': ' + err.message); continue; }
     for (const [appId, rec] of units) {
-      if (!APP_IDS.includes(appId)) continue;
+      if (!APP_IDS.includes(appId)) {
+        // A sales row for an app outside the live list usually means a NEW app
+        // that the store lookup has not caught yet. Surface it once instead of
+        // silently losing its downloads.
+        if (!ignored.has(appId)) {
+          console.log('  NOTE: sales report has ' + appId + ' (' + rec.title + ') outside the live list — ignored');
+          ignored.add(appId);
+        }
+        continue;
+      }
       const entry = byApp.get(appId) || { byDay: new Map(), title: rec.title };
       entry.byDay.set(date, (entry.byDay.get(date) || 0) + rec.units);
       if (rec.title) entry.title = rec.title;
@@ -517,6 +621,10 @@ async function main() {
 
   const token = signJwt(loadPrivateKey());
   const vendorNumber = (process.env.ASC_VENDOR_NUMBER || '').trim();
+  // Must run before fetchSalesUnits: that function filters the vendor-wide
+  // report down to APP_IDS. Discovering the list afterwards would drop the new
+  // app's units.
+  const storeApps = await resolveAppIds();
 
   // Downloads from Sales & Trends (the SAME source as the ASC "App 销量"
   // card) whenever a vendor number is configured; the window ends at the
@@ -553,7 +661,15 @@ async function main() {
       }
       // Impressions live inside "App Store Discovery and Engagement Standard" — the
       // report NAME does not contain "impression", so we match by report name, not by metric.
-      const impressions = await fetchSeries(token, appId, [/app store discovery and engagement standard/i, /app store discovery and engagement/i], 'impressions');
+      let impressions = null;
+      try {
+        impressions = await fetchSeries(token, appId, [/app store discovery and engagement standard/i, /app store discovery and engagement/i], 'impressions');
+      } catch (err) {
+        // A just-launched app has no analytics report request yet. Losing the
+        // whole app here would ALSO drop its Sales & Trends downloads, so keep
+        // the row and publish impressions as "—" instead.
+        console.log('  WARNING: no impressions for ' + appId + ': ' + String(err.message).slice(0, 140));
+      }
       appResults.push({ appId, downloads, impressions });
     } catch (err) {
       console.log('  ERROR: ' + err.message);
@@ -622,6 +738,13 @@ async function main() {
     updatedAt: sales ? sales.latest : dayKey(new Date()),
     source: sales ? 'sales-and-trends' : 'analytics-reports',
     windowDays: WINDOW,
+    // "Live apps" is the count of apps ACTUALLY on sale (public App Store
+    // lookup), not the number of rows in the sales report — that report lags a
+    // new launch by weeks, so it cannot answer this question. The site renders
+    // this field instead of a hardcoded "2".
+    liveAppCount: storeApps.length || apps.length,
+    storeCheckedAt: dayKey(new Date()),
+    storeApps,
     totals: {
       downloadsWindow: totalCur > 0 ? totalCur : null,
       impressionsWindow: totalImpCur > 0 ? totalImpCur : null
@@ -652,7 +775,8 @@ async function main() {
 // imported (e.g. by tests) just expose the pure helpers.
 export {
   parseCsv, sumWindow, buildWindow, windowEndingAt, unitsFromSalesRows,
-  appKeyFor, uniqueAppKeys, buildDailySeries, seriesFromAnalyticsRows, main
+  appKeyFor, uniqueAppKeys, buildDailySeries, seriesFromAnalyticsRows,
+  mergeStoreApps, main
 };
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   main().catch((err) => { console.error('FATAL: ' + err.message); process.exit(1); });
