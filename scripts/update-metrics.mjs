@@ -35,6 +35,15 @@ const APP_IDS = (process.env.ASC_APP_IDS || '6796975099,6795164130').split(',').
 // when the absolute install count is growing. 90 days also smooths the sparse
 // early-stage data enough that one quiet week does not dominate the picture.
 const WINDOW = 90; // days
+// How far back to look for the newest available Sales & Trends DAILY report.
+// Apple generates these lazily: a day with no sales may have no file at all, and
+// a run on 2026-11-10 found NOTHING in the previous 10 days because the last
+// report was dated 2026-10-30 (day 11). The sync silently fell back to
+// Analytics "App Downloads", which only carries a single day of data and does
+// NOT match the ASC backend. Keep this comfortably longer than any realistic
+// reporting gap; the first hit wins, so a wider scan never changes the result
+// when reports are fresh.
+const SALES_SCAN_DAYS = 30;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Overridable so the end-to-end smoke test (scripts/test-pipeline.mjs) can run
 // main() against a throwaway copy instead of the real index.html.
@@ -453,7 +462,7 @@ async function fetchSalesDaily(token, vendorNumber, date) {
  */
 async function fetchSalesUnits(token, vendorNumber) {
   let latest = null;
-  for (let i = 1; i <= 10 && !latest; i++) {
+  for (let i = 1; i <= SALES_SCAN_DAYS && !latest; i++) {
     const d = new Date(); d.setUTCDate(d.getUTCDate() - i);
     const date = dayKey(d);
     try {

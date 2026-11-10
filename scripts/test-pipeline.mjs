@@ -34,7 +34,11 @@ function check(name, cond, detail = '') {
 // ---------------------------------------------------------------- fixtures
 const DANCELOG = '6795164130';
 const FREESTYLE = '6796975099';
-const LATEST = (() => { const d = new Date(); d.setUTCDate(d.getUTCDate() - 2); return d.toISOString().slice(0, 10); })();
+// Deliberately 12 days old, NOT 2: Apple sometimes has no DAILY sales report
+// for over a week, and the sync used to scan only 10 days back. With a 2-day
+// fixture that bug is invisible — the report is always found. This fixture is
+// the regression guard for the 2026-11-10 fallback-to-Analytics incident.
+const LATEST = (() => { const d = new Date(); d.setUTCDate(d.getUTCDate() - 12); return d.toISOString().slice(0, 10); })();
 const dayBefore = (d) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() - 1); return x.toISOString().slice(0, 10); };
 
 // Sales TSV: same date, both apps, plus an UPDATE row (7F) that must be ignored.
@@ -192,6 +196,9 @@ if (data) {
     data.apps.find(x => x.key === 'freestyle')?.impressionsWindow === 25,
     String(data.apps.find(x => x.key === 'freestyle')?.impressionsWindow));
   check('source is sales-and-trends', data.source === 'sales-and-trends', data.source);
+  check('sales scan still finds a report 12 days old (no Analytics fallback)',
+    data.source === 'sales-and-trends' && data.updatedAt === LATEST,
+    'source=' + data.source + ' updatedAt=' + data.updatedAt);
   check('updatedAt is the latest available report date', data.updatedAt === LATEST, data.updatedAt);
 }
 
