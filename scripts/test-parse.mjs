@@ -8,7 +8,7 @@
 import {
   parseCsv, sumWindow, buildWindow, unitsFromSalesRows, windowEndingAt,
   appKeyFor, uniqueAppKeys, buildDailySeries, seriesFromAnalyticsRows,
-  mergeStoreApps
+  mergeStoreApps, mergeDailyMaps, conversionFor
 } from './update-metrics.mjs';
 
 let failed = 0;
@@ -235,5 +235,42 @@ check('store discovery: empty / missing payloads are harmless',
   mergeStoreApps([null, { results: [] }, undefined]).length === 0);
 check('store discovery: malformed rows without trackId are skipped',
   mergeStoreApps([{ results: [ARTIST, { wrapperType: 'software', trackName: 'Ghost' }] }]).length === 0);
+
+// ---- full-window impressions + same-day conversion (F35) -----------------
+// Analytics ONGOING reports emit many DAILY instances whose date ranges can
+// overlap. Summing them would multiply impressions; merging takes the max per
+// day, which is identical to a sum for disjoint instances.
+const m1 = new Map([['2026-10-29', 10], ['2026-10-30', 20]]);
+const m2 = new Map([['2026-10-30', 35], ['2026-10-31', 5]]);
+const mergedDays = mergeDailyMaps([m1, m2]);
+check('instance merge: disjoint days are all kept (no gaps)',
+  mergedDays.get('2026-10-29') === 10 && mergedDays.get('2026-10-31') === 5,
+  JSON.stringify([...mergedDays]));
+check('instance merge: overlapping day uses the max, not a double count',
+  mergedDays.get('2026-10-30') === 35, String(mergedDays.get('2026-10-30')));
+check('instance merge: null / non-finite / empty inputs are harmless',
+  mergeDailyMaps([null, undefined, new Map([['x', NaN]]), new Map()]).size === 0);
+check('instance merge: a single instance is returned unchanged',
+  mergeDailyMaps([m1]).get('2026-10-30') === 20);
+
+// The rate is ONLY valid when BOTH sides cover the same dates. Days with no
+// impression report must disappear from the numerator too, otherwise a
+// 90-day download total over a 1-day denominator yields the old 87.5% lie.
+const dlByDay = new Map([['2026-10-29', 4], ['2026-10-30', 6], ['2026-10-31', 900]]);
+const impByDay = new Map([['2026-10-29', 100], ['2026-10-30', 100]]);
+const conv = conversionFor(dlByDay, impByDay, ['2026-10-29', '2026-10-30', '2026-10-31']);
+check('conversion: both sides are restricted to the SAME shared days',
+  conv && conv.downloads === 10 && conv.impressions === 200 && conv.days === 2,
+  JSON.stringify(conv));
+check('conversion: the 900 downloads on a day without impressions are excluded',
+  conv && conv.pct === 5, JSON.stringify(conv));
+check('conversion: rounding keeps two decimals',
+  conversionFor(new Map([['d', 1]]), new Map([['d', 3]]), ['d']).pct === 33.33);
+check('conversion: no denominator returns null instead of Infinity / NaN',
+  conversionFor(dlByDay, new Map(), ['2026-10-29']) === null);
+check('conversion: missing either series returns null',
+  conversionFor(null, impByDay, ['d']) === null && conversionFor(dlByDay, null, ['d']) === null);
+check('conversion: dates outside the requested window are ignored',
+  conversionFor(new Map([['outside', 50]]), new Map([['outside', 100]]), ['2026-10-30']) === null);
 
 process.exit(failed);

@@ -55,6 +55,12 @@ const impressionsCsv = (appId, name, rows) => [
   'Date\tApp Name\tApp Apple Identifier\tEvent\tPage Type\tSource Type\tCounts',
   ...rows.map(([ev, n]) => `${LATEST}\t${name}\t${appId}\t${ev}\tApp Store\tSearch\t${n}`)
 ].join('\n');
+// Same shape on a different date — used by the third run to prove that ALL
+// DAILY Analytics instances are merged into a full-window impression series.
+const impressionsCsvOn = (appId, name, date, rows) => [
+  'Date\tApp Name\tApp Apple Identifier\tEvent\tPage Type\tSource Type\tCounts',
+  ...rows.map(([ev, n]) => `${date}\t${name}\t${appId}\t${ev}\tApp Store\tSearch\t${n}`)
+].join('\n');
 // 100 impressions + 299 page views must total 100, not 399.
 const IMP_DANCELOG = impressionsCsv(DANCELOG, 'Dance Log', [['Impression', 60], ['Impression', 40], ['Page view', 299]]);
 const IMP_FREESTYLE = impressionsCsv(FREESTYLE, 'Freestyle Dance Challenge', [['Impression', 25], ['Page view', 77]]);
@@ -87,6 +93,20 @@ fs.writeFileSync(indexFile, [
   '</script>',
   '</body></html>'
 ].join('\n'), 'utf8');
+
+// The standalone SitePilot case page gets its own baked snapshot. Use a
+// throwaway copy so the real subpage is never touched by a test run.
+const subpageFile = path.join(tmp, 'sitepilot.html');
+fs.writeFileSync(subpageFile, [
+  '<!doctype html><html><body>',
+  '<script>',
+  '/* SITEPILOT-METRICS:START (hand-written placeholder) */',
+  'const SITEPILOT_METRICS = {};',
+  '/* SITEPILOT-METRICS:END */',
+  '</script>',
+  '</body></html>'
+].join('\n'), 'utf8');
+process.env.ASC_SUBPAGE_FILE = subpageFile;
 
 const { publicKey, privateKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
 process.env.ASC_ISSUER_ID = 'test-issuer';
@@ -195,6 +215,20 @@ if (data) {
   check('impressions exclude page views: Freestyle = 25 (not 102)',
     data.apps.find(x => x.key === 'freestyle')?.impressionsWindow === 25,
     String(data.apps.find(x => x.key === 'freestyle')?.impressionsWindow));
+  check('same-window conversion: totals = 26 downloads / 125 impressions = 20.8%',
+    data.totals.conversionPct === 20.8 && data.totals.conversionDays === 1,
+    JSON.stringify(data.totals));
+  check('same-window conversion is published PER APP for the case pages',
+    data.apps.find(x => x.key === 'dancelog')?.conversionPct === 23 &&
+    data.apps.find(x => x.key === 'freestyle')?.conversionPct === 12,
+    JSON.stringify(data.apps.map(a => [a.key, a.conversionPct])));
+  check('impression coverage is published (days with data)',
+    data.totals.impressionDays === 1 &&
+    data.apps.find(x => x.key === 'dancelog')?.impressionDays === 1,
+    JSON.stringify(data.totals));
+  const sub1 = JSON.parse(fs.readFileSync(subpageFile, 'utf8').match(/const SITEPILOT_METRICS = ([\s\S]*?);\n\/\* SITEPILOT-METRICS:END/)[1]);
+  check('subpage: no SitePilot in a 2-app snapshot writes app = null (no invented numbers)',
+    sub1.app === null && sub1.windowDays === 90, JSON.stringify(sub1));
   check('source is sales-and-trends', data.source === 'sales-and-trends', data.source);
   check('sales scan still finds a report 12 days old (no Analytics fallback)',
     data.source === 'sales-and-trends' && data.updatedAt === LATEST,
@@ -220,8 +254,24 @@ check('site: KPI values are clamped to non-negative / 0-100%',
   site.includes('Math.max(0, o[k])') && site.includes('Math.min(100, Math.max(0, Math.round(share)))'));
 check('site: legacy 30d snapshot fields are still read (no blank cards between syncs)',
   site.includes("'downloads30d'") && site.includes("'impressions30d'"));
-check('site: no misleading conversion-rate column (different windows for numerator/denominator)',
-  !site.includes('<th>Conv.</th>') && !site.includes('const conv ='));
+check('site: conversion is read from a same-window sync field, never recomputed here',
+  site.includes("'conversionPct'") && !site.includes('const conv =') &&
+  site.includes('same dates') && site.includes('id="traction-conv-note"'));
+check('site: homepage shows cumulative impressions and conversion KPIs',
+  site.includes('id="kpi-impressions"') && site.includes('id="kpi-conversion"') &&
+  site.includes('imp(m.totals)') && site.includes('cv(m.totals)'));
+check('site: cumulative chart is always visible (no collapsed <details>)',
+  !site.includes('<details class="traction-details">') &&
+  site.includes('<div class="traction-details">') &&
+  site.includes('<p class="traction-details-title">'));
+check('site: workflow commits both the homepage and the standalone case page',
+  fs.readFileSync(new URL('../.github/workflows/update-metrics.yml', import.meta.url), 'utf8')
+    .includes('git add index.html sitepilot/index.html'));
+check('site: all three case pages show their OWN app data',
+  ['freestyle', 'dancelog', 'sitepilot'].every(k =>
+    site.includes(`data-app-metric="${k}:downloads"`) &&
+    site.includes(`data-app-metric="${k}:impressions"`) &&
+    site.includes(`data-app-metric="${k}:conversion"`)));
 check('site: live-app count is data-driven, never a hardcoded 2',
   site.includes('id="kpi-appcount"') && site.includes('Number(m.liveAppCount)') &&
   !site.includes('<strong class="kpi-num">2</strong>'));
@@ -307,6 +357,82 @@ if (data2) {
     data2.totals.downloadsWindow === 26, String(data2.totals.downloadsWindow));
   check('auto-discovery: store links have no tracking query',
     (data2.storeApps || []).every(a => !a.url.includes('uo=4')));
+  check('auto-discovery: an app with no impressions has NO fabricated conversion rate',
+    data2.apps.find(a => a.appleId === SITEPILOT).conversionPct === null,
+    JSON.stringify(data2.apps.find(a => a.appleId === SITEPILOT)));
+  check('auto-discovery: totals conversion is still published for the other two apps',
+    typeof data2.totals.conversionPct === 'number' && data2.totals.conversionPct > 0,
+    JSON.stringify(data2.totals));
+  const sub2 = JSON.parse(fs.readFileSync(subpageFile, 'utf8').match(/const SITEPILOT_METRICS = ([\s\S]*?);\n\/\* SITEPILOT-METRICS:END/)[1]);
+  check('subpage: SitePilot case page receives ITS OWN numbers, not the homepage totals',
+    sub2.app && sub2.app.appleId === SITEPILOT && sub2.app.downloadsWindow === 0 &&
+    sub2.app.impressionsWindow === null && sub2.app.conversionPct === null,
+    JSON.stringify(sub2));
+  check('subpage: rewritten inline script still compiles',
+    (() => { try { new Function(fs.readFileSync(subpageFile, 'utf8').match(/<script>([\s\S]*?)<\/script>/)[1]); return true; } catch (e) { return false; } })());
+}
+// ------------------------------- third run: full-window impressions (F35)
+// Two DAILY instances per app (one on LATEST, one on the day before) plus a
+// WEEKLY instance that must be skipped. If the sync still read only the first
+// instance, impressionsWindow would stay at 100 / 25 and this guard goes red.
+const PREV = dayBefore(LATEST);
+const appIn3 = (s) => (String(s).includes(DANCELOG) ? DANCELOG : FREESTYLE);
+process.env.ASC_APP_IDS = `${FREESTYLE},${DANCELOG}`;
+const req3 = [];
+globalThis.fetch = async (url, opts) => {
+  const u = String(url);
+  req3.push(u);
+  if (u.includes('/instances')) {
+    const appId = appIn3(u);
+    return json({ data: [
+      { id: 'iA-' + appId, attributes: { granularity: 'DAILY' } },
+      { id: 'iB-' + appId, attributes: { granularity: 'DAILY' } },
+      { id: 'iW-' + appId, attributes: { granularity: 'WEEKLY' } }
+    ]});
+  }
+  if (u.includes('/segments')) {
+    const appId = appIn3(u);
+    const tag = u.includes('iB-') ? 'b' : 'a';
+    return json({ data: [{ type: 'analyticsReportSegments', id: 'seg-' + appId + '-' + tag,
+      attributes: { url: 'https://s3.test/' + appId + '-' + tag + '.csv.gz' } }] });
+  }
+  if (u.startsWith('https://s3.test/')) {
+    const appId = appIn3(u);
+    if (u.includes('-b.csv.gz')) return raw(gz(impressionsCsvOn(appId, 'App ' + appId, PREV, [['Impression', 50]])));
+    return raw(gz(u.includes(DANCELOG) ? IMP_DANCELOG : IMP_FREESTYLE));
+  }
+  return baseFetch(url, opts);
+};
+let threw3 = null;
+try { await mod.main(); } catch (err) { threw3 = err; }
+check('full-window impressions: main() completes without throwing', threw3 === null, threw3 && threw3.message);
+
+const html3 = fs.readFileSync(indexFile, 'utf8');
+const assign3 = html3.indexOf('const ASC_METRICS = ');
+const obj3 = html3.indexOf('{', assign3);
+let depth3 = 0, end3 = -1;
+for (let i = obj3; i < html3.length; i++) {
+  if (html3[i] === '{') depth3++;
+  else if (html3[i] === '}') { depth3--; if (depth3 === 0) { end3 = i; break; } }
+}
+let data3 = null;
+try { data3 = JSON.parse(html3.slice(obj3, end3 + 1)); }
+catch (err) { console.log('  JSON.parse #3 failed: ' + err.message); }
+check('full-window impressions: written block is valid JSON', data3 !== null);
+if (data3) {
+  check('full-window impressions: BOTH DAILY instances are summed (100+50 / 25+50)',
+    data3.apps.find(a => a.key === 'dancelog')?.impressionsWindow === 150 &&
+    data3.apps.find(a => a.key === 'freestyle')?.impressionsWindow === 75,
+    JSON.stringify(data3.apps.map(a => [a.key, a.impressionsWindow])));
+  check('full-window impressions: homepage total is the sum across all apps',
+    data3.totals.impressionsWindow === 225, String(data3.totals.impressionsWindow));
+  check('full-window impressions: WEEKLY instance is not double-counted',
+    req3.filter(u => u.includes('iW-')).length === 0 &&
+    req3.filter(u => u.includes('/segments')).length === 4,
+    'segment requests=' + req3.filter(u => u.includes('/segments')).length);
+  check('full-window impressions: conversion uses both shared days, not just one',
+    data3.totals.conversionDays === 2 && data3.totals.conversionPct === 11.56,
+    JSON.stringify(data3.totals));
 }
 globalThis.fetch = baseFetch;
 

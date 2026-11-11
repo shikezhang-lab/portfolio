@@ -496,13 +496,21 @@
     .metric { min-width: 160px; flex: 1; border-top: 3px solid var(--accent); padding: 14px 0; }
     .metric strong { display: block; font-size: 2rem; letter-spacing: -.04em; }
     .metric span { color: var(--muted); }
-    .traction-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+    .traction-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
     .kpi-card { border: 1px solid var(--line); border-radius: 2px; background: var(--white); padding: 18px; display: flex; flex-direction: column; gap: 6px; }
     .kpi-num { font-size: 2.2rem; letter-spacing: -.04em; line-height: 1; color: var(--ink); }
     .kpi-num.accent { color: var(--accent); }
     .kpi-label { font-weight: 700; line-height: 1.35; }
     .kpi-sub { color: var(--muted); font-size: .82rem; line-height: 1.4; }
     .traction-chart { margin-top: 14px; border: 1px solid var(--line); border-radius: 2px; background: var(--white); padding: 18px; }
+    /* Case pages show ONE app's numbers; the homepage shows the combined total. */
+    .app-metrics { margin-top: 28px; }
+    .app-metric-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+    .app-metric { border: 1px solid var(--line); border-radius: 2px; background: var(--white); padding: 14px 16px; display: flex; flex-direction: column; gap: 5px; }
+    .app-metric-num { font-size: 1.7rem; letter-spacing: -.03em; line-height: 1.1; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .app-metric-num.accent { color: var(--accent); }
+    .app-metric-label { font-size: .8rem; font-weight: 800; color: var(--ink); }
+    .app-metric-sub { font-size: .72rem; color: var(--muted); line-height: 1.4; }
     .traction-chart svg { display: block; width: 100%; height: auto; }
     .traction-note { color: var(--muted); font-size: .85rem; margin: 0; }
 
@@ -543,9 +551,9 @@
     .traction-source { color: var(--muted); font-size: .8rem; margin-top: 12px; }
     .traction-honest { margin-top: 14px; color: var(--muted); font-size: .9rem; line-height: 1.55; border-left: 3px solid var(--accent); padding: 4px 0 4px 12px; }
     .traction-honest strong { color: var(--ink); }
-    .traction-details { margin-top: 14px; border: 1px solid var(--line); border-radius: 2px; background: var(--white); padding: 12px 18px; }
-    .traction-details summary { cursor: pointer; font-weight: 700; color: var(--accent); font-size: .9rem; outline: none; }
-    .traction-details summary::marker { color: var(--accent); }
+    .traction-details { margin-top: 14px; border: 1px solid var(--line); border-radius: 2px; background: var(--white); padding: 16px 18px 18px; }
+    .traction-details-title { font-weight: 800; color: var(--ink); font-size: .95rem; margin: 0 0 2px; }
+    .traction-note { color: var(--muted); font-size: .76rem; line-height: 1.55; margin: 10px 0 0; }
     .traction-raw { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: .88rem; }
     .traction-raw th, .traction-raw td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--line); }
     .traction-raw th:first-child, .traction-raw td:first-child { text-align: left; }
@@ -554,6 +562,7 @@
     .traction-raw tr.raw-total td:first-child { color: var(--accent); }
     @media (max-width: 860px) { .traction-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     @media (max-width: 520px) { .traction-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) { .app-metric-grid { grid-template-columns: 1fr; } }
     .process-list { counter-reset: process; display: grid; gap: 0; margin-top: 24px; }
     .process-item {
       counter-increment: process;
@@ -1002,6 +1011,16 @@
               <span class="kpi-sub" id="kpi-appnames">Verified from the App Store</span>
             </div>
             <div class="kpi-card">
+              <strong class="kpi-num" id="kpi-impressions">—</strong>
+              <span class="kpi-label">Cumulative impressions · all apps</span>
+              <span class="kpi-sub" data-window="kpi-impressions">App Store impressions · last 90 days</span>
+            </div>
+            <div class="kpi-card">
+              <strong class="kpi-num" id="kpi-conversion">—</strong>
+              <span class="kpi-label">Store conversion rate</span>
+              <span class="kpi-sub" data-window="kpi-conversion">Downloads ÷ impressions · shared days</span>
+            </div>
+            <div class="kpi-card">
               <strong class="kpi-num" id="kpi-share">—</strong>
               <span class="kpi-label">of downloads on DanceLog</span>
               <span class="kpi-sub" data-window="kpi-share">Share of the 90-day total</span>
@@ -1013,19 +1032,20 @@
             </div>
           </div>
           <p class="traction-honest"><span>Real scale, stated plainly:</span> <strong id="traction-abs">—</strong> <span data-window="honest">organic installs across all live apps in the last 90 days, with $0 paid marketing. Early-validation stage — the signal that matters is retention &amp; engagement quality, not volume yet.</span></p>
-          <details class="traction-details">
-            <summary>View the raw numbers</summary>
+          <div class="traction-details">
+            <p class="traction-details-title">The raw numbers</p>
             <table class="traction-raw">
               <thead>
-                <tr><th>App</th><th data-window="th-downloads">Downloads (90d)</th><th data-window="th-impressions">Impressions (90d)</th></tr>
+                <tr><th>App</th><th data-window="th-downloads">Downloads (90d)</th><th data-window="th-impressions">Impressions (90d)</th><th data-window="th-conversion">Conv. (90d)</th></tr>
               </thead>
               <tbody id="traction-raw-body"></tbody>
             </table>
+            <p class="traction-note" id="traction-conv-note"></p>
             <div class="traction-chart">
               <div class="tags"><span class="tag strong">Cumulative downloads</span><span class="tag" data-window="chart-tag">Last 90 days</span></div>
               <div id="traction-chart"></div>
             </div>
-          </details>
+          </div>
           <p class="traction-source"><span data-window="source">Data: App Store Connect · last 90 days · updated</span> <span id="traction-updated">—</span></p>
         </section>
 
@@ -1356,6 +1376,26 @@
             <div class="fact"><span class="fact-label">Data</span><span class="fact-value">AI generative local music</span></div>
             <div class="fact"><span class="fact-label">Evidence</span><span class="fact-value">PRD · App Store · Rights materials</span></div>
           </div>
+        <div class="app-metrics">
+          <p class="eyebrow">Live App Store data</p>
+          <div class="app-metric-grid">
+            <div class="app-metric">
+              <strong class="app-metric-num accent" data-app-metric="freestyle:downloads">—</strong>
+              <span class="app-metric-label">Downloads</span>
+              <span class="app-metric-sub" data-window="case-downloads-sub">Last 90 days · this app</span>
+            </div>
+            <div class="app-metric">
+              <strong class="app-metric-num" data-app-metric="freestyle:impressions">—</strong>
+              <span class="app-metric-label">Impressions</span>
+              <span class="app-metric-sub" data-window="case-impressions-sub">Last 90 days · this app</span>
+            </div>
+            <div class="app-metric">
+              <strong class="app-metric-num" data-app-metric="freestyle:conversion">—</strong>
+              <span class="app-metric-label">Conversion rate</span>
+              <span class="app-metric-sub" data-window="case-conversion-sub">Downloads ÷ impressions · shared days</span>
+            </div>
+          </div>
+        </div>
         </section>
 
         <section class="section">
@@ -1469,6 +1509,26 @@
             <div class="fact"><span class="fact-label">Data</span><span class="fact-value">fully local</span></div>
             <div class="fact"><span class="fact-label">Evidence</span><span class="fact-value">App Store · Tests · Device UAT</span></div>
           </div>
+        <div class="app-metrics">
+          <p class="eyebrow">Live App Store data</p>
+          <div class="app-metric-grid">
+            <div class="app-metric">
+              <strong class="app-metric-num accent" data-app-metric="dancelog:downloads">—</strong>
+              <span class="app-metric-label">Downloads</span>
+              <span class="app-metric-sub" data-window="case-downloads-sub">Last 90 days · this app</span>
+            </div>
+            <div class="app-metric">
+              <strong class="app-metric-num" data-app-metric="dancelog:impressions">—</strong>
+              <span class="app-metric-label">Impressions</span>
+              <span class="app-metric-sub" data-window="case-impressions-sub">Last 90 days · this app</span>
+            </div>
+            <div class="app-metric">
+              <strong class="app-metric-num" data-app-metric="dancelog:conversion">—</strong>
+              <span class="app-metric-label">Conversion rate</span>
+              <span class="app-metric-sub" data-window="case-conversion-sub">Downloads ÷ impressions · shared days</span>
+            </div>
+          </div>
+        </div>
         </section>
 
         <section class="section">
@@ -1579,6 +1639,26 @@
           <h1>SitePilot</h1>
           <p class="lead">An iOS restaurant site-evaluation tool that turns costs and operating assumptions into explainable decisions.</p>
           <div class="actions"><a class="button" href="sitepilot/">View case</a><a class="button" href="https://apps.apple.com/us/app/sitepilot-restaurant-lease/id6811473992" target="_blank" rel="noopener noreferrer">View on the App Store ↗</a></div>
+        <div class="app-metrics">
+          <p class="eyebrow">Live App Store data</p>
+          <div class="app-metric-grid">
+            <div class="app-metric">
+              <strong class="app-metric-num accent" data-app-metric="sitepilot:downloads">—</strong>
+              <span class="app-metric-label">Downloads</span>
+              <span class="app-metric-sub" data-window="case-downloads-sub">Last 90 days · this app</span>
+            </div>
+            <div class="app-metric">
+              <strong class="app-metric-num" data-app-metric="sitepilot:impressions">—</strong>
+              <span class="app-metric-label">Impressions</span>
+              <span class="app-metric-sub" data-window="case-impressions-sub">Last 90 days · this app</span>
+            </div>
+            <div class="app-metric">
+              <strong class="app-metric-num" data-app-metric="sitepilot:conversion">—</strong>
+              <span class="app-metric-label">Conversion rate</span>
+              <span class="app-metric-sub" data-window="case-conversion-sub">Downloads ÷ impressions · shared days</span>
+            </div>
+          </div>
+        </div>
         </section>
       </div>
     </article>
@@ -2227,7 +2307,14 @@
         "Daily trend appears here once the first automatic App Store Connect sync completes.": "首次自动同步 App Store Connect 数据后，这里将显示每日下载趋势。",
         "Early traction": "早期增长中",
         "Real scale, stated plainly:": "真实量级，如实说明：",
-        "View the raw numbers": "查看原始数据",
+        "The raw numbers": "原始数据明细",
+        "Cumulative impressions · all apps": "全部应用累计曝光量",
+        "Store conversion rate": "商店转化率",
+        "Live App Store data": "App Store 实时数据",
+        "Downloads": "下载量",
+        "Impressions": "曝光量",
+        "Conversion rate": "转化率",
+        "Conversion rate appears once App Store impression data is available.": "App Store 曝光数据可用后，这里会显示转化率。",
         "App": "应用",
         "Combined": "合计",
         "cumulative": "累计",
@@ -3116,16 +3203,26 @@
         // {n} here is the number of LIVE APPS, not the window length. renderTraction
         // passes the store count explicitly; this element is not [data-window].
         'appcount':       { en: '{n} live apps · verified from the App Store', zh: '{n} 款在架 · 数据源自 App Store' },
+        'kpi-impressions':  { en: 'App Store impressions · last {n} days', zh: 'App Store 曝光量 · 近 {n} 天' },
+        'kpi-conversion':   { en: 'Downloads ÷ impressions · same {d} of {n} days', zh: '下载量 ÷ 曝光量 · 取近 {n} 天中有曝光数据的 {d} 天' },
         'th-downloads':   { en: 'Downloads ({n}d)', zh: '下载量（{n}天）' },
-        'th-impressions': { en: 'Impressions ({n}d)', zh: '浏览量（{n}天）' },
+        'th-impressions': { en: 'Impressions ({n}d)', zh: '曝光量（{n}天）' },
+        'th-conversion':  { en: 'Conv. ({n}d)', zh: '转化率（{n}天）' },
+        'conv-note':      { en: 'Conversion uses only the {d} day(s) with impression data, so downloads and impressions always cover the same dates. Impressions above are the full {n}-day sum.', zh: '转化率仅用有曝光数据的 {d} 天计算，下载量与曝光量始终覆盖同一批日期；上表曝光量为完整 {n} 天合计。' },
+        'case-downloads-sub':   { en: 'Last {n} days · this app', zh: '近 {n} 天 · 该产品' },
+        'case-impressions-sub': { en: 'Last {n} days · this app', zh: '近 {n} 天 · 该产品' },
+        'case-conversion-sub':  { en: 'Downloads ÷ impressions · same days', zh: '下载量 ÷ 曝光量 · 同一批日期' },
         'chart-tag':      { en: 'Last {n} days', zh: '近 {n} 天' },
         'source':         { en: 'Data: App Store Connect · last {n} days · updated', zh: '数据来源：App Store Connect · 近 {n} 天 · 更新于' },
         'legend':         { en: 'Cumulative ({n}d)', zh: '近 {n} 天累计' },
-        'fact':           { en: '{v} downloads · {n}d', zh: '{v} 次下载 · 近 {n} 天' }
+        'fact':           { en: '{v} downloads · {n}d', zh: '{v} 次下载 · 近 {n} 天' },
+        'case-downloads':   { en: '{v}', zh: '{v}' },
+        'case-impressions': { en: '{v}', zh: '{v}' }
       };
-      const winText = (kind, n, v) => {
+      const winText = (kind, n, v, d) => {
         const t = (WINDOW_COPY[kind] || {})[siteLang === 'zh' ? 'zh' : 'en'] || '';
-        return t.replace(/\{n\}/g, n).replace(/\{v\}/g, v == null ? '' : v);
+        return t.replace(/\{n\}/g, n).replace(/\{d\}/g, d == null ? 0 : d)
+          .replace(/\{v\}/g, v == null ? '' : v);
       };
 
       function renderTraction() {
@@ -3149,13 +3246,21 @@
           }
           return null;
         };
+        const cv = (o) => {
+          if (!o) return null;
+          for (const k of ['conversionPct', 'conversion90d']) {
+            if (typeof o[k] === 'number' && Number.isFinite(o[k])) return Math.min(100, Math.max(0, o[k]));
+          }
+          return null;
+        };
         const apps = m.apps || [];
         const byKey = (key) => apps.find((a) => a.key === key);
         const dancelog = byKey('dancelog');
         const datesLen = m.daily && Array.isArray(m.daily.dates) ? m.daily.dates.length : 0;
         const W = Number(m.windowDays) || datesLen || 90;
+        const convDays = Number(m.totals && m.totals.conversionDays) || 0;
         document.querySelectorAll('[data-window]').forEach((el) => {
-          el.textContent = winText(el.dataset.window, W);
+          el.textContent = winText(el.dataset.window, W, null, convDays);
         });
         // "Live apps" comes from the public App Store lookup embedded by the
         // sync, NOT from the number of rows in the sales report (which lags a
@@ -3186,11 +3291,38 @@
           ? dancelog.sharePct
           : (total > 0 && dancelogTotal !== null ? Math.round((dancelogTotal / total) * 100) : null);
         set('kpi-share', share !== null ? Math.min(100, Math.max(0, Math.round(share))) + '%' : '—');
+        const reportedImp = imp(m.totals);
+        const hasImp = reportedImp !== null || apps.some((a) => imp(a) !== null);
+        const impTotal = reportedImp !== null ? reportedImp : apps.reduce((acc, a) => acc + (imp(a) || 0), 0);
+        set('kpi-impressions', hasImp ? impTotal.toLocaleString() : '—');
+        // The sync only publishes a ratio when BOTH sides were summed over the
+        // same dates. Never divide the 90-day download total by a partial
+        // impression series here — that produced 87.5% before F33.
+        const convTotal = cv(m.totals);
+        set('kpi-conversion', convTotal !== null ? (Math.round(convTotal * 10) / 10) + '%' : '—');
+        set('traction-conv-note', convTotal !== null && convDays > 0
+          ? winText('conv-note', W, null, convDays)
+          : tr('Conversion rate appears once App Store impression data is available.'));
         document.querySelectorAll('[data-traction]').forEach((el) => {
           const app = byKey(el.dataset.traction);
           if (!app) return;
           const n = dl(app);
           el.textContent = n !== null ? winText('fact', W, n) : tr('Early traction');
+        });
+        // Case pages show ONE app each; the homepage cards above are the sum of
+        // all apps. Both read the same snapshot, so they can never disagree.
+        document.querySelectorAll('[data-app-metric]').forEach((el) => {
+          const [key, field] = String(el.dataset.appMetric).split(':');
+          const app = byKey(key);
+          if (!app) return;
+          const nD = dl(app), nI = imp(app), nC = cv(app);
+          const days = Number(app.conversionDays) || convDays;
+          if (field === 'downloads') el.textContent = nD !== null ? winText('case-downloads', W, nD) : '—';
+          else if (field === 'impressions') el.textContent = nI !== null ? winText('case-impressions', W, nI) : '—';
+          else if (field === 'conversion') {
+            el.textContent = nC !== null ? (Math.round(nC * 10) / 10) + '%' : '—';
+            el.title = winText('conv-note', W, null, days);
+          }
         });
         const APP_NAMES = { dancelog: 'DanceLog', freestyle: 'Freestyle Challenge', sitepilot: 'SitePilot' };
         const labelFor = (a) => a.name || APP_NAMES[a.key] || a.key;
@@ -3204,23 +3336,24 @@
         });
         const cell = (text) => { const td = document.createElement('td'); td.textContent = text; return td; };
         const fmt = (n) => (typeof n === 'number' ? n.toLocaleString() : '—');
-        // Deliberately NO conversion-rate column: downloads come from Sales &
-        // Trends across the whole window, while impressions come from a single
-        // Analytics DAILY instance. Dividing the two produced a meaningless
-        // 87.5% once the window grew to 90 days. Never publish a ratio whose
-        // numerator and denominator cover different periods.
+        // The sync NOW reads every DAILY Analytics instance (full window) and
+        // publishes conversionPct only when downloads AND impressions were
+        // summed over the SAME dates. The old "90-day downloads / 3-day
+        // impressions = 87.5%" bug is therefore impossible here. Never compute
+        // this rate in the browser from the two columns — always read the field.
         const rawBody = document.getElementById('traction-raw-body');
         if (rawBody) {
           rawBody.textContent = '';
           let totalD = 0, totalI = 0, hasD = false, hasI = false;
           apps.forEach((a) => {
-            const aD = dl(a), aI = imp(a);
+            const aD = dl(a), aI = imp(a), aC = cv(a);
             if (aD !== null) { totalD += aD; hasD = true; }
             if (aI !== null) { totalI += aI; hasI = true; }
             const tr = document.createElement('tr');
             tr.appendChild(cell(labelFor(a)));
             tr.appendChild(cell(fmt(aD)));
             tr.appendChild(cell(fmt(aI)));
+            tr.appendChild(cell(aC !== null ? (Math.round(aC * 10) / 10) + '%' : '—'));
             rawBody.appendChild(tr);
           });
           const trt = document.createElement('tr');
@@ -3228,6 +3361,7 @@
           trt.appendChild(cell('Combined'));
           trt.appendChild(cell(hasD ? fmt(totalD) : '—'));
           trt.appendChild(cell(hasI ? fmt(totalI) : '—'));
+          trt.appendChild(cell(cv(m.totals) !== null ? (Math.round(cv(m.totals) * 10) / 10) + '%' : '—'));
           rawBody.appendChild(trt);
         }
         const chart = document.getElementById('traction-chart');
@@ -3590,11 +3724,9 @@
         chartResizeTimer = setTimeout(renderTraction, 180);
       };
       window.addEventListener('resize', redrawChart);
-      // A closed <details> measures 0px wide, so the first render happens before
-      // the chart has a size — redraw once it is actually visible.
-      document.querySelectorAll('.traction-details').forEach((det) => {
-        det.addEventListener('toggle', () => { if (det.open) redrawChart(); });
-      });
+      // The chart is always visible now (no <details> wrapper), so it is
+      // measured at first paint. renderPage() still redraws it when a hidden
+      // page becomes active, and the resize listener handles width changes.
 
       setSiteLang(siteLang, { save: false });
 

@@ -63,12 +63,23 @@ const WINDOW = 90; // days
 // reporting gap; the first hit wins, so a wider scan never changes the result
 // when reports are fresh.
 const SALES_SCAN_DAYS = 30;
+// An ONGOING Analytics report emits MANY DAILY instances (the 2026-11-10 run
+// listed 41). Reading only the FIRST one left us with ~3 days of impressions,
+// while downloads covered 90 days — dividing the two produced the bogus 87.5%
+// "conversion rate" that F33 had to delete. For impressions we now merge every
+// DAILY instance so numerator and denominator cover the same window.
+const MAX_DAILY_INSTANCES = 120;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // Overridable so the end-to-end smoke test (scripts/test-pipeline.mjs) can run
 // main() against a throwaway copy instead of the real index.html.
 const INDEX = process.env.ASC_INDEX_FILE
   ? path.resolve(process.env.ASC_INDEX_FILE)
   : path.join(ROOT, 'index.html');
+// The standalone SitePilot case page lives outside the SPA (renderPage()
+// redirects #/sitepilot to sitepilot/), so it needs its own baked snapshot.
+const SUBPAGE = process.env.ASC_SUBPAGE_FILE
+  ? path.resolve(process.env.ASC_SUBPAGE_FILE)
+  : path.join(ROOT, 'sitepilot', 'index.html');
 
 const b64url = (buf) => Buffer.from(buf).toString('base64url');
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -230,8 +241,11 @@ function buildWindow(now = new Date()) {
   return dates;
 }
 
-/** Fetch one metric series (daily values) for one app via Analytics Reports (STANDALONE). */
-async function fetchSeries(token, appId, reportMatchers, metric = 'downloads') {
+/** Fetch one metric series (daily values) for one app via Analytics Reports (STANDALONE).
+ *  With { allDaily: true } every DAILY instance is read and merged, which is
+ *  required for a full-window impressions series. The default keeps the old
+ *  single-instance behaviour for the Analytics downloads fallback. */
+async function fetchSeries(token, appId, reportMatchers, metric = 'downloads', { allDaily = false } = {}) {
   let requests = await api(token, `/v1/apps/${appId}/analyticsReportRequests`);
   let list = (requests && requests.data) || [];
   if (list.length === 0) {
@@ -278,31 +292,49 @@ async function fetchSeries(token, appId, reportMatchers, metric = 'downloads') {
         continue;
       }
       console.log(`  report "${report.attributes.name}": ${instList.length} instance(s), granularity [${instList.map(i => i.attributes.granularity).join(', ')}]`);
-      const instance = instList.find(i => i.attributes.granularity === 'DAILY') || instList[0];
-      const segments = await api(token, `/v1/analyticsReportInstances/${instance.id}/segments`);
-      const rows = [];
-      for (const seg of (segments.data || [])) {
-        const url = seg.attributes && (seg.attributes.url || seg.attributes.downloadUrl);
-        if (!url) continue;
-        const res = await fetch(url);
-        if (!res.ok) { console.log(`  segment download failed (${res.status}), skipping`); continue; }
-        const buf = Buffer.from(await res.arrayBuffer());
-        const isGzip = buf[0] === 0x1f && buf[1] === 0x8b;
-        const text = isGzip ? zlib.gunzipSync(buf).toString('utf8') : buf.toString('utf8');
-        if (isGzip) console.log('  decoded gzip segment, header: ' + text.split(/\r?\n/)[0]);
-        rows.push(...parseCsv(text));
+      // An ONGOING report emits one DAILY instance per reporting day. The first
+      // instance alone covered only ~3 days; a 90-day download total divided by
+      // that was the 87.5% fake conversion rate F33 removed. Impressions now
+      // read EVERY DAILY instance and merge them into one full-window series.
+      const dailyInstances = allDaily
+        ? instList.filter(i => i.attributes.granularity === 'DAILY').slice(0, MAX_DAILY_INSTANCES)
+        : [instList.find(i => i.attributes.granularity === 'DAILY') || instList[0]];
+      if (!dailyInstances.length) continue;
+      if (allDaily) console.log(`  reading ${dailyInstances.length} DAILY instance(s) for a full-window ${metric} series`);
+      const parts = [];
+      for (const instance of dailyInstances) {
+        const segments = await api(token, `/v1/analyticsReportInstances/${instance.id}/segments`);
+        const rows = [];
+        for (const seg of (segments.data || [])) {
+          const url = seg.attributes && (seg.attributes.url || seg.attributes.downloadUrl);
+          if (!url) continue;
+          const res = await fetch(url);
+          if (!res.ok) { console.log(`  segment download failed (${res.status}), skipping`); continue; }
+          const buf = Buffer.from(await res.arrayBuffer());
+          const isGzip = buf[0] === 0x1f && buf[1] === 0x8b;
+          const text = isGzip ? zlib.gunzipSync(buf).toString('utf8') : buf.toString('utf8');
+          if (isGzip && parts.length === 0) console.log('  decoded gzip segment, header: ' + text.split(/\r?\n/)[0]);
+          rows.push(...parseCsv(text));
+        }
+        if (!rows.length) continue;
+        // Full header, untruncated — the column names are the only way to tell
+        // from a workflow log which metric was actually summed.
+        if (parts.length === 0) console.log('  header: ' + rows[0].map(h => h.trim()).join(' | '));
+        const parsed = seriesFromAnalyticsRows(rows, metric);
+        if (!parsed) { console.log('  unexpected CSV header — no usable date/value column pair'); continue; }
+        if (parts.length === 0) {
+          console.log(`  parsed ${metric}: date col "${parsed.dateCol}", value col "${parsed.valueCol}"`
+            + (parsed.filteredByEvent ? `, impression rows kept out of [${parsed.events.join(', ').slice(0, 120)}]` : '')
+            + ` -> ${parsed.byDay.size} day(s) in this instance`);
+        }
+        parts.push(parsed.byDay);
       }
-      console.log(`  report "${report.attributes.name}": ${segments.data ? segments.data.length : 0} segment(s), ${rows.length} CSV row(s)`);
-      if (rows.length === 0) continue;
-      // Full header, untruncated — the column names are the only way to tell
-      // from a workflow log which metric was actually summed.
-      console.log('  header: ' + rows[0].map(h => h.trim()).join(' | '));
-      const parsed = seriesFromAnalyticsRows(rows, metric);
-      if (!parsed) { console.log('  unexpected CSV header — no usable date/value column pair'); continue; }
-      console.log(`  parsed ${metric}: date col "${parsed.dateCol}", value col "${parsed.valueCol}"`
-        + (parsed.filteredByEvent ? `, impression rows kept out of [${parsed.events.join(', ').slice(0, 120)}]` : '')
-        + ` -> ${parsed.byDay.size} day(s)`);
-      return { reportName: report.attributes.name, byDay: parsed.byDay };
+      if (!parts.length) continue;
+      const byDay = allDaily ? mergeDailyMaps(parts) : parts[0];
+      const days = [...byDay.keys()].sort();
+      console.log(`  ${metric}: ${byDay.size} day(s) merged from ${parts.length} instance(s)`
+        + (days.length ? ` (${days[0]}..${days[days.length - 1]})` : ''));
+      return { reportName: report.attributes.name, byDay };
     }
   }
   return null;
@@ -373,6 +405,50 @@ function seriesFromAnalyticsRows(rows, metric = 'downloads') {
     valueCol: rows[0][valIdx].trim(),
     events: [...events],
     filteredByEvent
+  };
+}
+
+/**
+ * Merge the daily maps from several Analytics Report instances.
+ * Neighbouring ONGOING instances can repeat the same dates, so a plain sum
+ * would multiply impressions. Taking the LARGEST per-day value is identical to
+ * a sum when instances are disjoint and cannot inflate the denominator when
+ * they overlap. Exported for the pure-function regression tests.
+ */
+function mergeDailyMaps(maps) {
+  const merged = new Map();
+  for (const m of maps) {
+    if (!m) continue;
+    for (const [day, value] of m) {
+      if (!Number.isFinite(value)) continue;
+      merged.set(day, Math.max(merged.get(day) || 0, value));
+    }
+  }
+  return merged;
+}
+
+/**
+ * Conversion rate over ONE shared set of days — the only honest way to publish
+ * a ratio. Both downloads and impressions are summed ONLY over the window dates
+ * where impression data actually exists; days with no impression report are
+ * excluded from BOTH sides. A 90-day numerator over a 1-day denominator (F33)
+ * is therefore impossible by construction.
+ * Returns null instead of a fabricated number when there is no denominator.
+ */
+function conversionFor(downloadByDay, impressionByDay, dates) {
+  if (!downloadByDay || !impressionByDay) return null;
+  let downloads = 0, impressions = 0, days = 0;
+  for (const day of dates) {
+    const iv = impressionByDay.get(day) || 0;
+    if (!(iv > 0)) continue;
+    impressions += iv;
+    downloads += downloadByDay.get(day) || 0;
+    days += 1;
+  }
+  if (!(impressions > 0)) return null;
+  return {
+    downloads, impressions, days,
+    pct: Math.round((downloads / impressions) * 10000) / 100
   };
 }
 
@@ -603,6 +679,35 @@ async function fetchSalesUnits(token, vendorNumber) {
   return { latest, dates, byApp };
 }
 
+/** Bake a single-app snapshot into the standalone SitePilot case page.
+ *  Missing markers are NOT fatal: a fork may not carry that subpage, and the
+ *  metrics sync must still work. */
+function writeSubpage(metrics) {
+  let html;
+  try { html = fs.readFileSync(SUBPAGE, 'utf8'); }
+  catch (err) { console.log('  subpage not readable — skipping: ' + SUBPAGE); return; }
+  const start = '/* SITEPILOT-METRICS:START';
+  const end = 'SITEPILOT-METRICS:END */';
+  const s = html.indexOf(start), e = html.indexOf(end);
+  if (s === -1 || e === -1) { console.log('  SITEPILOT-METRICS markers missing — skipping subpage'); return; }
+  const app = (metrics.apps || []).find(a => a.key === 'sitepilot') || null;
+  const payload = {
+    updatedAt: metrics.updatedAt,
+    windowDays: metrics.windowDays,
+    app: app ? {
+      appleId: app.appleId,
+      downloadsWindow: app.downloadsWindow,
+      impressionsWindow: app.impressionsWindow,
+      conversionPct: app.conversionPct
+    } : null
+  };
+  const block = start + ' (auto-updated by GitHub Action — do not edit by hand) */\n'
+    + 'const SITEPILOT_METRICS = ' + JSON.stringify(payload, null, 2) + ';\n'
+    + '/* ' + end;
+  fs.writeFileSync(SUBPAGE, html.slice(0, s) + block + html.slice(e + end.length));
+  console.log('sitepilot case page metrics updated: ' + JSON.stringify(payload.app));
+}
+
 async function main() {
   if (process.argv.includes('--selftest')) {
     const { publicKey, privateKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
@@ -663,7 +768,7 @@ async function main() {
       // report NAME does not contain "impression", so we match by report name, not by metric.
       let impressions = null;
       try {
-        impressions = await fetchSeries(token, appId, [/app store discovery and engagement standard/i, /app store discovery and engagement/i], 'impressions');
+        impressions = await fetchSeries(token, appId, [/app store discovery and engagement standard/i, /app store discovery and engagement/i], 'impressions', { allDaily: true });
       } catch (err) {
         // A just-launched app has no analytics report request yet. Losing the
         // whole app here would ALSO drop its Sales & Trends downloads, so keep
@@ -690,10 +795,25 @@ async function main() {
   // re-derived from a filtered array — the previous `apps.indexOf(a)` lookup
   // was both O(n²) and easy to get wrong.
   let totalCur = 0, totalImpCur = 0;
+  // Combined per-day maps are needed for the HOMEPAGE conversion rate: it must
+  // be total downloads / total impressions over the SAME days, not an average
+  // of per-app percentages (which would weight a tiny app like a big one).
+  const combinedDownloads = new Map();
+  const combinedImpressions = new Map();
   const apps = entries.map((e, i) => {
     const key = keys[i];
     const curD = e.downloads ? sumWindow(e.downloads.byDay, current) : null;
     const curI = e.impressions ? sumWindow(e.impressions.byDay, current) : null;
+    const conv = conversionFor(
+      e.downloads ? e.downloads.byDay : null,
+      e.impressions ? e.impressions.byDay : null,
+      current);
+    const impressionDays = e.impressions
+      ? current.filter(d => (e.impressions.byDay.get(d) || 0) > 0).length : 0;
+    for (const d of current) {
+      if (e.downloads) combinedDownloads.set(d, (combinedDownloads.get(d) || 0) + (e.downloads.byDay.get(d) || 0));
+      if (e.impressions) combinedImpressions.set(d, (combinedImpressions.get(d) || 0) + (e.impressions.byDay.get(d) || 0));
+    }
     if (typeof curD === 'number') { totalCur += curD; }
     if (typeof curI === 'number') { totalImpCur += curI; }
     return {
@@ -708,9 +828,14 @@ async function main() {
       // snapshot written before the switch keeps rendering.
       downloadsWindow: curD,
       impressionsWindow: curI,
+      impressionDays,
+      conversionPct: conv ? conv.pct : null,
+      conversionDays: conv ? conv.days : 0,
       daily: e.downloads ? current.map(d => e.downloads.byDay.get(d) || 0) : null
     };
   });
+  const totalConv = conversionFor(combinedDownloads, combinedImpressions, current);
+  const totalImpressionDays = current.filter(d => (combinedImpressions.get(d) || 0) > 0).length;
   for (const a of apps) {
     if (totalCur > 0 && typeof a.downloadsWindow === 'number') a.sharePct = Math.round((a.downloadsWindow / totalCur) * 100);
   }
@@ -729,7 +854,8 @@ async function main() {
       console.log(`  WARNING: store title "${storeTitle}" does not look like "${APP_LABEL[a.key] || a.key}" (appleId ${a.appleId}) — verify APP_KEY_BY_APPLE_ID`);
     }
     console.log(`  ${a.key} (${a.appleId}): downloadsWindow=${a.downloadsWindow} impressionsWindow=${a.impressionsWindow}`
-      + ` — downloads seen on ${daysWithData}/${WINDOW} days`);
+      + ` — downloads on ${daysWithData}/${WINDOW} days, impressions on ${a.impressionDays}/${WINDOW} days`
+      + `, conversion=${a.conversionPct === null ? '—' : a.conversionPct + '%'} over ${a.conversionDays} shared day(s)`);
   });
 
   const metrics = {
@@ -747,13 +873,20 @@ async function main() {
     storeApps,
     totals: {
       downloadsWindow: totalCur > 0 ? totalCur : null,
-      impressionsWindow: totalImpCur > 0 ? totalImpCur : null
+      impressionsWindow: totalImpCur > 0 ? totalImpCur : null,
+      conversionPct: totalConv ? totalConv.pct : null,
+      conversionDays: totalConv ? totalConv.days : 0,
+      impressionDays: totalImpressionDays
     },
     apps,
     // Built from the app list (never hardcoded keys) so a key remap or a third
     // app can no longer produce a null series / a silently missing line.
     daily: buildDailySeries(current, apps),
-    impressions: totalImpCur > 0 ? { source: 'analytics-reports', totalWindow: totalImpCur } : null
+    impressions: totalImpCur > 0 ? {
+      source: 'analytics-reports',
+      totalWindow: totalImpCur,
+      coverageDays: totalImpressionDays
+    } : null
   };
 
   const start = '/* ASC-METRICS:START';
@@ -768,7 +901,9 @@ async function main() {
     // is parsed as JS (ASC - METRICS : END) and throws SyntaxError, killing the whole script.
     + '      /* ' + end;
   fs.writeFileSync(INDEX, html.slice(0, s) + block + html.slice(e + end.length));
-  console.log('index.html ASC-METRICS block updated: ' + JSON.stringify(metrics.totals) + ' apps=' + apps.length);
+  writeSubpage(metrics);
+  console.log('index.html ASC-METRICS block updated: ' + JSON.stringify(metrics.totals)
+    + ' apps=' + apps.length + ' impressionDays=' + totalImpressionDays);
 }
 
 // Only run when executed directly (node scripts/update-metrics.mjs); when
@@ -776,7 +911,7 @@ async function main() {
 export {
   parseCsv, sumWindow, buildWindow, windowEndingAt, unitsFromSalesRows,
   appKeyFor, uniqueAppKeys, buildDailySeries, seriesFromAnalyticsRows,
-  mergeStoreApps, main
+  mergeStoreApps, mergeDailyMaps, conversionFor, main
 };
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   main().catch((err) => { console.error('FATAL: ' + err.message); process.exit(1); });
