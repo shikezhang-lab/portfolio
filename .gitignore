@@ -19,6 +19,9 @@ REVIEW_*.md
 # Internal content plans (not for public repo)
 PLAN_*.md
 
+# Unified folder for all internal review / plan reports (2026-11-13)
+reports/
+
 # Internal agent documentation index (not for public repo)
 AGENT-DOCS-INDEX.md
 
