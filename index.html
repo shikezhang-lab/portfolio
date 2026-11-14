@@ -899,6 +899,8 @@
       --dify-chatbot-bubble-button-box-shadow: none;
       --dify-chatbot-bubble-button-bottom: 24px;
       --dify-chatbot-bubble-button-right: 26px;
+      --dify-chatbot-bubble-button-width: 60px;
+      --dify-chatbot-bubble-button-height: 60px;
     }
     #dify-chatbot-bubble-window {
       width: 24rem !important;
@@ -913,10 +915,56 @@
         --dify-chatbot-bubble-button-right: 14px;
       }
     }
+    /* 方案 1+3：放大按钮、呼吸描边、AI 角标、可关闭双语引导卡 */
+    #dify-chatbot-bubble-button { overflow: visible; }
+    #dify-chatbot-bubble-button svg { width: 28px !important; height: 28px !important; }
+    #dify-chatbot-bubble-button::before {
+      content: ''; position: absolute; inset: -7px; z-index: 2147483647;
+      border: 1px solid rgba(22, 112, 183, .42);
+      border-radius: calc(var(--radius) + 6px);
+      pointer-events: none; animation: qa-breathe 2.8s ease-in-out infinite;
+    }
+    #dify-chatbot-bubble-button::after {
+      content: 'AI'; position: absolute; top: -8px; right: -8px; z-index: 2147483647;
+      padding: 3px 5px; line-height: 1; font-size: 11px; font-weight: 500;
+      letter-spacing: .02em; pointer-events: none;
+      color: var(--accent); background: var(--paper);
+      border: 1px solid var(--accent); border-radius: var(--radius);
+    }
+    @keyframes qa-breathe {
+      0%, 100% { transform: scale(1); opacity: .5; }
+      50% { transform: scale(1.06); opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #dify-chatbot-bubble-button::before { animation: none; opacity: .55; }
+    }
+    .qa-dify-guide {
+      position: fixed; right: 26px; bottom: 96px; z-index: 2147483647;
+      display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+      width: max-content; max-width: min(260px, calc(100vw - 28px));
+      padding: 10px 12px; background: var(--paper);
+      border: 1px solid var(--line); border-radius: var(--radius);
+      font-size: .76rem; color: var(--ink); cursor: pointer;
+    }
+    .qa-dify-guide[hidden] { display: none; }
+    .qa-dify-guide b { font-weight: 500; }
+    .qa-dify-guide .qa-guide-cta {
+      color: var(--accent); text-decoration: underline;
+      text-underline-offset: 2px; white-space: nowrap;
+    }
+    .qa-dify-guide button {
+      flex: none; width: 20px; height: 20px; padding: 0;
+      border: 1px solid var(--line); background: none; color: var(--muted);
+      cursor: pointer; font-size: .8rem; line-height: 1;
+    }
+    .qa-dify-guide button:hover { border-color: var(--ink); color: var(--ink); }
+    @media (max-width: 640px) {
+      .qa-dify-guide { right: 14px; bottom: 86px; max-width: calc(100vw - 28px); }
+    }
     /* iframe 被浏览器拒绝（例如 file:// 的 opaque origin 不匹配 Dify 的
        frame-ancestors 'self' *）时给出的可用出口。默认隐藏，异常时才出现。 */
     .qa-dify-tip {
-      position: fixed; right: 26px; bottom: 84px; z-index: 2147483647;
+      position: fixed; right: 26px; bottom: 96px; z-index: 2147483647;
       display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
       max-width: min(320px, calc(100vw - 28px));
       padding: 9px 10px; background: var(--paper);
@@ -932,7 +980,7 @@
     }
     .qa-dify-tip button:hover { border-color: var(--ink); color: var(--ink); }
     @media (max-width: 640px) {
-      .qa-dify-tip { right: 14px; left: 14px; bottom: 78px; max-width: none; }
+      .qa-dify-tip { right: 14px; left: 14px; bottom: 86px; max-width: none; }
     }
     /* == QA assistant dock (Dify) :END == */
   </style>
@@ -3987,6 +4035,12 @@
     <button id="qa-dify-tip-close" type="button" aria-label="Dismiss hint" title="Dismiss">×</button>
   </div>
 
+  <div class="qa-dify-guide" id="qa-dify-guide" data-qa-root hidden role="button" tabindex="0" aria-label="Ask the portfolio assistant">
+    <b data-qa-i18n="guideTitle">Have a question about my work?</b>
+    <span class="qa-guide-cta" data-qa-i18n="guideCta">Ask me ↗</span>
+    <button id="qa-dify-guide-close" type="button" aria-label="Dismiss guide" title="Dismiss">×</button>
+  </div>
+
   <script>
   (function () {
     'use strict';
@@ -4014,7 +4068,9 @@
         open: 'Open portfolio case advisor',
         close: 'Close portfolio case advisor',
         tipTitle: 'Chat window not showing?',
-        tipLink: 'Open in new tab ↗'
+        tipLink: 'Open in new tab ↗',
+        guideTitle: 'Have a question about my work?',
+        guideCta: 'Ask me ↗'
       },
       zh: {
         coachTitle: '想找某个案例？问我',
@@ -4025,7 +4081,9 @@
         open: '打开案例检索顾问',
         close: '关闭案例检索顾问',
         tipTitle: '对话窗口没显示？',
-        tipLink: '在新窗口打开 ↗'
+        tipLink: '在新窗口打开 ↗',
+        guideTitle: '有问题？问我的作品集助手',
+        guideCta: '来聊聊 ↗'
       }
     };
 
@@ -4039,14 +4097,16 @@
     var tipText = document.getElementById('qa-dify-tip-text');
     var tipLink = document.getElementById('qa-dify-tip-link');
     var tipClose = document.getElementById('qa-dify-tip-close');
-    if (!dock || !panel || !frame || !toggle || !closeBtn || !newTab || !tip) return;
+    var guide = document.getElementById('qa-dify-guide');
+    var guideClose = document.getElementById('qa-dify-guide-close');
+    if (!dock || !panel || !frame || !toggle || !closeBtn || !newTab || !tip || !guide) return;
 
     newTab.href = CONFIG.chatUrl;
 
     function currentLang() { return document.documentElement.lang === 'zh-CN' ? 'zh' : 'en'; }
     function applyQaLang(lang) {
       var t = TEXT[lang] || TEXT.en;
-      dock.querySelectorAll('[data-qa-i18n]').forEach(function (el) {
+      document.querySelectorAll('[data-qa-root] [data-qa-i18n]').forEach(function (el) {
         var key = el.getAttribute('data-qa-i18n');
         if (t[key]) el.textContent = t[key];
       });
@@ -4146,9 +4206,66 @@
       setTimeout(function () {
         if (chatReady || tip.hidden === false) return;
         applyQaLang(currentLang());
+        guide.hidden = true;
         tip.hidden = false;
       }, 6000);
     }, true);
+
+    /* 方案 1：首次访问自动出现的双语引导卡；关过 / 点过就不再自动弹，
+       hover 官方按钮仍可再唤起。自绘兜底模式下 officialPresent() 为假，卡片保持隐藏。 */
+    var GUIDE_KEY = 'qa-dify-guide-dismissed-v1';
+    function guideDismissed() {
+      try { return localStorage.getItem(GUIDE_KEY) === '1'; } catch (e) { return false; }
+    }
+    function rememberGuide() {
+      try { localStorage.setItem(GUIDE_KEY, '1'); } catch (e) {}
+    }
+    function hideGuide(remember) {
+      guide.hidden = true;
+      if (remember) rememberGuide();
+    }
+    var guideBound = false;
+    function bindGuide() {
+      if (guideBound || !officialPresent()) return;
+      var btn = document.getElementById('dify-chatbot-bubble-button');
+      var win = document.getElementById('dify-chatbot-bubble-window');
+      if (!btn) return;
+      guideBound = true;
+      function windowOpen() { return win && getComputedStyle(win).display !== 'none'; }
+      function revealGuide() {
+        if (windowOpen()) return;
+        guide.hidden = false;
+      }
+      function activateGuide() {
+        hideGuide(true);
+        btn.click();
+      }
+      guideClose.addEventListener('click', function (e) {
+        e.stopPropagation();
+        hideGuide(true);
+      });
+      guide.addEventListener('click', function (e) {
+        if (e.target.closest && e.target.closest('#qa-dify-guide-close')) return;
+        activateGuide();
+      });
+      guide.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activateGuide(); }
+      });
+      btn.addEventListener('mouseenter', revealGuide);
+      btn.addEventListener('click', function () {
+        setTimeout(function () { if (windowOpen()) hideGuide(true); }, 60);
+      });
+      setTimeout(function () { if (!guideDismissed()) revealGuide(); }, 1200);
+    }
+    if (window.MutationObserver) {
+      var guideMo = new MutationObserver(function () {
+        if (officialPresent()) { bindGuide(); guideMo.disconnect(); }
+      });
+      guideMo.observe(document.body, { childList: true, subtree: true });
+      setTimeout(function () { guideMo.disconnect(); }, 30000);
+    }
+    bindGuide();
+    setTimeout(bindGuide, 6000);
   })();
   </script>
   <!-- == QA assistant dock (Dify) :END == -->
