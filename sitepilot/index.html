@@ -174,6 +174,73 @@ html { scroll-padding-top: 80px; }
 @media(max-width:900px){.decision-pair{grid-template-columns:1fr;gap:0}.decision-pair .story-shot{max-width:280px;margin:6px auto 26px;justify-self:center}.decision-pair .decision{grid-template-columns:35px minmax(0,1fr);gap:15px}}
 @media(max-width:900px){.journey{grid-template-columns:1fr}.journey-step{border-right:0;border-bottom:1px solid var(--line)}.journey-step:last-child{border-bottom:0}.journey-step:not(:last-child):after{content:'↓';right:auto;left:50%;top:auto;bottom:-11px;transform:none}}
 @media(max-width:700px){.beat{grid-template-columns:1fr;gap:5px}.story-hook{font-size:.95rem}.deep-inner{padding:4px 14px 20px}.deep-dive>summary{padding:16px 14px}.story-shot{max-width:260px;margin:30px auto}}
+
+/* ---- Editorial two-column chapters + adaptive flex card rows (2026-11-15) --
+   Text-only chapters used to reserve the same 880px column as the chapters
+   with phone screenshots, leaving 280px of dead space on the right. A reading
+   column + a note rail (same 280px / 44px as .decision-pair) now fill the
+   container. Everything below uses the existing ink/muted/line/paper-2
+   palette and the existing paragraph typography. */
+.story-grid>.grid-main>h2,.story-grid>.grid-main>p,
+.story-grid>.grid-foot>p,.story-grid>.grid-wide>p{max-width:none}
+@media (min-width:1001px){
+  .story-grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;column-gap:44px;align-items:start}
+  .story-grid>.grid-main{grid-column:1;grid-row:1;min-width:0}
+  .story-grid>.grid-rail{grid-column:2;grid-row:1;min-width:0;align-self:stretch;border-left:1px solid var(--line);padding-left:24px}
+  .story-grid>.grid-wide{grid-column:1/-1;grid-row:2;min-width:0}
+  .story-grid>.grid-foot{grid-column:1;grid-row:3;min-width:0}
+}
+@media (max-width:1000px){
+  .story-grid{display:flex;flex-direction:column}
+  .story-grid>.grid-main,.story-grid>.grid-wide,.story-grid>.grid-foot,.story-grid>.grid-rail{min-width:0}
+  .story-grid>.grid-main{order:1}
+  .story-grid>.grid-wide{order:2}
+  .story-grid>.grid-foot{order:3}
+  .story-grid>.grid-rail{order:4;border-left:0;border-top:1px solid var(--line);margin-top:26px;padding-top:18px}
+  #scene.story-grid>.grid-rail{order:2;border-top:0;margin-top:0;padding-top:0}
+  #scene.story-grid>.grid-wide{order:3}
+  #scene.story-grid>.grid-foot{order:4}
+}
+/* right-hand note cards: same light-grey rules and paragraph typography */
+.grid-rail>*{min-width:0;overflow-wrap:anywhere}
+.grid-rail .research-note,.grid-rail .boundary-line{background:var(--paper-2);border:1px solid var(--line);border-left:3px solid var(--accent);padding:18px 16px;margin:0 0 18px}
+.grid-rail .research-note h3{font-size:1rem;margin-bottom:10px}
+.grid-rail .boundary-line strong{display:block;font-size:1rem;margin-bottom:8px}
+.grid-rail .research-note p,.grid-rail .boundary-line p{font-size:.9rem;line-height:1.65;margin:0}
+.grid-rail .takeaway{font-size:1rem;line-height:1.6;border-left:3px solid var(--accent);padding:0 0 0 14px;margin:0 0 20px}
+.grid-rail .sp-note{border-top:1px solid var(--line);padding-top:12px;margin:0 0 16px}
+.grid-rail .story-beats{margin:0;border-top:0}
+.grid-rail .beat{grid-template-columns:1fr;gap:4px;padding:12px 0;border-bottom:1px solid var(--line)}
+.grid-rail .beat:last-child{border-bottom:0}
+.grid-rail .beat strong{font-size:.92rem}
+.grid-rail .beat span{font-size:.86rem;line-height:1.6}
+/* card rows: flex, static pseudo-element arrows, wrapping text, thin rules */
+.journey{display:flex;align-items:stretch}
+.journey-step{flex:1 1 0;min-width:0;display:flex;flex-direction:row;align-items:stretch;gap:0;padding:0;border:0;position:static}
+.journey-step .step-body{flex:1 1 auto;min-width:0;padding:18px 14px 20px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:6px;overflow-wrap:anywhere}
+.journey-step:last-child .step-body{border-right:0}
+.journey-step strong,.journey-step span:not(.journey-no){overflow-wrap:anywhere}
+.system-flow{display:flex;align-items:stretch}
+.node{flex:1 1 0;min-width:0;display:flex;flex-direction:row;align-items:stretch;gap:0;padding:0;border:0;position:static}
+.node .node-body{flex:1 1 auto;min-width:0;padding:22px 18px;border-right:1px solid var(--line);overflow-wrap:anywhere}
+.node:last-child .node-body{border-right:0}
+.node strong{line-height:1.45;overflow-wrap:anywhere}
+.journey-step:not(:last-child)::after,.node:not(:last-child)::after{
+  content:'→';position:static;flex:0 0 auto;align-self:center;
+  margin:0 -13px;padding:0 2px;background:var(--paper-2);
+  color:var(--accent);font-weight:800;line-height:1;z-index:1;
+  top:auto;right:auto;bottom:auto;left:auto;transform:none
+}
+@media (max-width:900px){
+  .journey,.system-flow{flex-direction:column}
+  .journey-step,.node{flex-direction:column;align-items:stretch}
+  .journey-step .step-body,.node .node-body{border-right:0;border-bottom:1px solid var(--line)}
+  .journey-step:last-child .step-body,.node:last-child .node-body{border-bottom:0}
+  .journey-step:not(:last-child)::after,.node:not(:last-child)::after{
+    content:'↓';position:static;align-self:center;margin:-11px 0;padding:0 4px;
+    top:auto;right:auto;bottom:auto;left:auto;transform:none
+  }
+}
 </style></head><body><a class="skip" href="#main"><span data-i18n="t0">Skip to case study</span></a>  <header class="site-header">
     <a class="brand" href="../#/home">Shike's AI Product Studio</a>
     <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-navigation"><span data-language="zh">菜单</span><span data-language="en">Menu</span></button>
@@ -238,52 +305,68 @@ html { scroll-padding-top: 80px; }
 <a href="#appendix"><span data-i18n="nav8">08 · Technical appendix</span></a>
 </nav>
 
-<section class="section container" id="problem">
+<section class="section container story-grid" id="problem">
+<div class="grid-main">
 <p class="eyebrow" data-i18n="p1Eyebrow">01 / THE USER'S PROBLEM</p>
 <h2 data-i18n="m1H2">The most expensive mistake happens before the lease is signed.</h2>
 <p data-i18n="p1p1">A first-time founder finds a corner unit, likes the footfall, and signs a five-year lease. Only afterwards do the real costs surface: triple-net charges on top of base rent, a liquor-license timeline measured in months, accessibility remediation, a personal guarantee. Rent alone on a multi-year lease is a six-figure commitment in most US metros — an illustration of scale, not a measured figure. What looked like a location decision has become a long, hard-to-reverse liability.</p>
 <p data-i18n="p1p2">For immigrant founders the gap is wider. NNN rent, permit sequencing and local compliance are unfamiliar vocabulary, and the expensive part is not knowing which question was never asked. The pain is not a shortage of advice. It is the absence of a way to see what is still unknown before committing.</p>
 <p data-i18n="p1p3">Every obvious substitute fails this particular decision. A consultant is priced for a chain with a real estate team. A black-box score cannot be argued with at the negotiating table. A general-purpose LLM will sound persuasive while producing different numbers on different days — unacceptable when the same inputs must give the same answer. So the opportunity I defined was deliberately narrow: not a smarter assistant, but a verdict a founder can open, recompute and challenge before signing.</p>
+</div>
+<div class="grid-rail">
 <div class="research-note">
 <h3 data-i18n="p1NoteH">Where the hypothesis came from</h3>
 <p data-i18n="p1NoteP">An exploratory observation of restaurant-consulting livestreams in China produced a demand signal, not a quantified audience study. Desk research added context: the National Restaurant Association's 2025 operations release reports median pre-tax income of 2.8% of sales for full-service and 4.0% for limited-service restaurants, so a thin margin leaves almost no room for an occupancy mistake. These are background signals, not evidence of willingness to pay.</p>
 <a href="#appendix"><span data-i18n="p1NoteL">See the sources and evidence boundaries ↗</span></a>
 </div>
+</div>
 </section>
 
-<section class="section container" id="scene">
+<section class="section container story-grid" id="scene">
+<div class="grid-main">
 <p class="eyebrow" data-i18n="p2Eyebrow">02 / SCENE &amp; CONSTRAINTS</p>
 <h2 data-i18n="p2H2">A two-week window, a unit with no signal, and a decision you cannot undo.</h2>
 <p data-i18n="p2Intro">Site search is a short, intense burst: two to four weeks of viewing shortlisted units, often in basements or unfinished shells where connectivity is unreliable. Then a lease is signed and the choice is effectively irreversible. I treated these three facts as product requirements rather than background colour — they decided the architecture and the business model before any feature was drawn.</p>
+</div>
+<div class="grid-wide">
+<h3 data-i18n="p2JourneyH">The journey I designed for</h3>
+<ol class="journey">
+<li class="journey-step"><div class="step-body"><span class="journey-no">01</span><strong data-i18n="p2j1">Shortlist a site</strong><span data-i18n="p2j1d">Broker notes, drive-bys, a rough rent figure</span></div></li>
+<li class="journey-step"><div class="step-body"><span class="journey-no">02</span><strong data-i18n="p2j2">Walk the unit</strong><span data-i18n="p2j2d">Weak signal, unfinished space, questions piling up</span></div></li>
+<li class="journey-step"><div class="step-body"><span class="journey-no">03</span><strong data-i18n="p2j3">Enter what is known</strong><span data-i18n="p2j3d">Yes / No / Unknown — missing facts stay visible</span></div></li>
+<li class="journey-step"><div class="step-body"><span class="journey-no">04</span><strong data-i18n="p2j4">Read the verdict</strong><span data-i18n="p2j4d">A frozen, recomputable report with every assumption</span></div></li>
+<li class="journey-step"><div class="step-body"><span class="journey-no">05</span><strong data-i18n="p2j5">Sign — or walk away</strong><span data-i18n="p2j5d">A rejection is a valid, valuable outcome</span></div></li>
+</ol>
+</div>
+<div class="grid-foot">
+<p data-i18n="p2JourneyCap" class="sp-note">The product is built around step 05, not step 03. A tool that only helps people feel good about a site they already want would miss the entire point.</p>
+<p data-i18n="p2Who" class="sp-note">Who it is for: first-time restaurant founders and site-selection consultants evaluating a shortlisted US site, including immigrants navigating unfamiliar local rules. Who it is not for: landlords, chain expansion teams, or anyone seeking legal, zoning or permit conclusions and a market-wide traffic dataset.</p>
+<p data-i18n="m2Note" class="sp-note">Thresholds (rent-to-sales, prime cost, the 25% feasibility gate) are product rules calibrated from public benchmarks, not predictions. They require local calibration city by city.</p>
+</div>
+<div class="grid-rail">
 <div class="story-beats">
 <div class="beat"><strong data-i18n="p2b1h">A burst, not a habit.</strong><span data-i18n="p2b1p">Founders evaluate a handful of sites once, not every month. That ruled out a recurring subscription before pricing was designed; a single-use credit pack fits the actual behaviour.</span></div>
 <div class="beat"><strong data-i18n="p2b2h">No reliable connection at the moment of truth.</strong><span data-i18n="p2b2p">The verdict has to be produced entirely on the device. No cloud round-trip may stand between a founder standing in an empty unit and an answer they can act on.</span></div>
 <div class="beat"><strong data-i18n="p2b3h">An irreversible commitment.</strong><span data-i18n="p2b3p">The report is frozen with the rule version that produced it. A rule update six months later must never silently rewrite the basis of a decision that was already signed.</span></div>
 </div>
-<h3 data-i18n="p2JourneyH">The journey I designed for</h3>
-<ol class="journey">
-<li class="journey-step"><span class="journey-no">01</span><strong data-i18n="p2j1">Shortlist a site</strong><span data-i18n="p2j1d">Broker notes, drive-bys, a rough rent figure</span></li>
-<li class="journey-step"><span class="journey-no">02</span><strong data-i18n="p2j2">Walk the unit</strong><span data-i18n="p2j2d">Weak signal, unfinished space, questions piling up</span></li>
-<li class="journey-step"><span class="journey-no">03</span><strong data-i18n="p2j3">Enter what is known</strong><span data-i18n="p2j3d">Yes / No / Unknown — missing facts stay visible</span></li>
-<li class="journey-step"><span class="journey-no">04</span><strong data-i18n="p2j4">Read the verdict</strong><span data-i18n="p2j4d">A frozen, recomputable report with every assumption</span></li>
-<li class="journey-step"><span class="journey-no">05</span><strong data-i18n="p2j5">Sign — or walk away</strong><span data-i18n="p2j5d">A rejection is a valid, valuable outcome</span></li>
-</ol>
-<p data-i18n="p2JourneyCap" class="sp-note">The product is built around step 05, not step 03. A tool that only helps people feel good about a site they already want would miss the entire point.</p>
-<p data-i18n="p2Who" class="sp-note">Who it is for: first-time restaurant founders and site-selection consultants evaluating a shortlisted US site, including immigrants navigating unfamiliar local rules. Who it is not for: landlords, chain expansion teams, or anyone seeking legal, zoning or permit conclusions and a market-wide traffic dataset.</p>
-<p data-i18n="m2Note" class="sp-note">Thresholds (rent-to-sales, prime cost, the 25% feasibility gate) are product rules calibrated from public benchmarks, not predictions. They require local calibration city by city.</p>
+</div>
 </section>
 
-<section class="section container" id="boundary">
+<section class="section container story-grid" id="boundary">
+<div class="grid-main">
 <p class="eyebrow" data-i18n="p3Eyebrow">03 / AI PRODUCT BOUNDARY STRATEGY</p>
 <h2 data-i18n="m3H2">Give the model the smallest possible job.</h2>
 <p data-i18n="p3p1">It would have been easy to frame SitePilot as an AI product: describe the site, let the model produce an assessment, ship the demo. I rejected that framing. The core of this product is a financial simulation with an auditable verdict — rent-to-sales, prime cost, payback and a feasibility gate. AI is an optional explanation layer, not the decision maker. That distinction is the case.</p>
 <p data-i18n="p3p2">The reason sits in the decision context. Someone about to sign a five-year lease needs the same inputs to produce the same answer on Tuesday and on Friday, needs to see every assumption behind it, and needs to be able to argue with the conclusion across a table from a landlord. A probabilistic text generator is the wrong instrument for that promise, however fluent it sounds.</p>
-<div class="boundary-line"><strong data-i18n="p3LineH">The line in the sand</strong><p data-i18n="p3Line">Every number, score and feasibility verdict is computed locally by deterministic code. The model may add optional wording around a result — it cannot compute, adjust or overrule that result.</p></div>
 <p data-i18n="p3p3">What the model is allowed to do is deliberately small: six qualitative, nullable fields — plain-language explanation, what to check next, talking points for a conversation. Each is labelled "AI inference — not part of the base score", each is generated only when the user asks, and missing fields are shown as a dash rather than filled with plausible text. If the model is slow, wrong, or switched off entirely, the report is unchanged.</p>
 <p data-i18n="p3p4">The rule I used to draw that line is transferable: delegate only work that is reversible, verifiable by the user, and cheap to be wrong about. Explaining a result in plainer words passes all three tests. Deciding whether a lease is viable fails all three — the decision is irreversible, the user cannot verify a model's arithmetic at a glance, and being wrong costs years of rent. This is why I describe SitePilot as a decision tool with a small AI feature, rather than an AI product with a calculator attached.</p>
 <div class="ai-branch"><p data-i18n="p3Branch">Local verdict → optional, user-triggered AI wording → never feeds back into the score or the gate</p></div>
+</div>
+<div class="grid-rail">
+<div class="boundary-line"><strong data-i18n="p3LineH">The line in the sand</strong><p data-i18n="p3Line">Every number, score and feasibility verdict is computed locally by deterministic code. The model may add optional wording around a result — it cannot compute, adjust or overrule that result.</p></div>
 <p data-i18n="p3Trade" class="takeaway">Trade-off: the AI feels less "smart" in a demo. In exchange, identical inputs always produce the same verdict, and the assistant can be switched off without breaking the product.</p>
 <p data-i18n="p3Link" class="sp-note">An early review proposed a plus-or-minus 15 point "AI adjustment" to the score. It was removed from the specification. The guard rails that enforce the boundary — output schema, request signing, quotas and eight degradation paths — are documented in the technical appendix at the end of this case.</p>
+</div>
 </section>
 
 <section class="section container" id="decisions">
@@ -319,33 +402,46 @@ html { scroll-padding-top: 80px; }
 <div class="screen-note story-note"><h3 data-i18n="t50">A decision users can inspect</h3><p data-i18n="t51">In this development example, the base scenario shows a monthly loss of $2,762 and rent-to-sales of 20.5% at $42,432 revenue. Pairing the ratio with its revenue assumption makes the result interpretable. It is a worked example, not a forecast for a real restaurant.</p><p data-i18n="t52" class="small">Unedited simulator captures · 13 Sep 2026. They illustrate the workflow, not the latest review build. Open either image for full detail.</p></div>
 </section>
 
-<section class="section container" id="architecture">
+<section class="section container story-grid" id="architecture">
+<div class="grid-main">
 <p class="eyebrow" data-i18n="p5Eyebrow">05 / SYSTEM, SIMPLIFIED</p>
 <h2 data-i18n="p5H2">The architecture is the product promise, written down.</h2>
 <p data-i18n="p5p1">One sentence is enough: the money math runs on the device, AI is an optional side branch that cannot touch the result, and only that branch plus purchase bookkeeping ever leave the phone. Everything else is an implementation detail.</p>
+</div>
+<div class="grid-wide">
 <div class="system-flow">
-<div class="node"><span>01</span><strong data-i18n="m5n1">Inputs &amp; assumptions</strong></div>
-<div class="node"><span>02</span><strong data-i18n="m5n2">Local math &amp; scoring</strong></div>
-<div class="node"><span>03</span><strong data-i18n="m5n3">Feasibility decision</strong></div>
-<div class="node"><span>04</span><strong data-i18n="m5n4">Frozen report snapshot</strong></div>
+<div class="node"><div class="node-body"><span>01</span><strong data-i18n="m5n1">Inputs &amp; assumptions</strong></div></div>
+<div class="node"><div class="node-body"><span>02</span><strong data-i18n="m5n2">Local math &amp; scoring</strong></div></div>
+<div class="node"><div class="node-body"><span>03</span><strong data-i18n="m5n3">Feasibility decision</strong></div></div>
+<div class="node"><div class="node-body"><span>04</span><strong data-i18n="m5n4">Frozen report snapshot</strong></div></div>
 </div>
 <div class="ai-branch"><p data-i18n="p5Branch">Optional branch → AI wording only → never feeds back into the verdict</p></div>
+</div>
+<div class="grid-foot">
 <p data-i18n="p5p2">That split exists for product reasons, not technical ones. Offline calculation makes the verdict available in an unfinished unit. Deterministic code makes the same inputs reproduce the same answer. A frozen snapshot keeps an old report honest after a rule pack changes. Put together, they are what make a "no" defensible to a founder who badly wants a "yes".</p>
+</div>
+<div class="grid-rail">
 <p data-i18n="m5Scope" class="sp-note">Shipped in v1: one built-in rule pack (US-TX-Austin v2026.09, weights 40 / 35 / 25), snapshot isolation and the offline kernel. Not implemented in this release: Google Places / FSA / Census data, DeviceCheck or App Attest, provider switching, and metro-wide rule packs. Roadmap items, not shipped capabilities.</p>
+</div>
 </section>
 
-<section class="section container" id="commerce">
+<section class="section container story-grid" id="commerce">
+<div class="grid-main">
 <p class="eyebrow" data-i18n="p6Eyebrow">06 / LAUNCH &amp; COMPLIANCE</p>
 <h2 data-i18n="m6H2">A successful purchase should still feel successful when the ledger fails.</h2>
 <p data-i18n="p6p1">App review exposed a mismatch that no unit test would have caught: a purchase could succeed, grant access, and still surface an error because a secondary ledger sync had failed. To a customer the distinction between payment and bookkeeping is invisible — they paid, and the app told them something went wrong.</p>
 <p data-i18n="p6p2">I separated the responsibilities. Verification anchors local entitlement delivery; the ledger records the transaction afterwards, and its failures became silent with a persistent retry queue. The product decision is simple: the user gets value at the moment they pay, and internal bookkeeping never gets to contradict that.</p>
 <p data-i18n="p6Review">Six rounds of App Store review reshaped the metadata, the purchase feedback and how reviewers reach the paid feature. The recurring lesson was that compliance is part of the product experience, not a checklist to clear after the product is finished.</p>
+</div>
+<div class="grid-rail">
 <p data-i18n="m6Take" class="takeaway">The lesson: failure handling is part of the paid product experience. It must reflect whether the user received value.</p>
 <p data-i18n="m6Price" class="sp-note">Pricing design: $6.99 single / $19.99 five-pack / $79.99 annual; no monthly plan, no free trial; the core verdict and rejection reports stay free. "Unlimited" annual AI was justified by a documented cost estimate (~$0.0015 per call, ~$0.30 per heavy user per year) — an estimate, not measured spend.</p>
 <p data-i18n="p6Outcome" class="sp-note">Outcome: released 5 Nov 2026 on the US App Store, v1.0. The detailed review log, open engineering items and release facts are in the appendix.</p>
+</div>
 </section>
 
-<section class="section container" id="verification">
+<section class="section container story-grid" id="verification">
+<div class="grid-main">
 <p class="eyebrow" data-i18n="p7Eyebrow">07 / VALIDATION &amp; WHAT I LEARNED</p>
 <h2 data-i18n="p7H2">v1 was a controlled product experiment, not a growth launch.</h2>
 <p data-i18n="p7p1">The goal of this release was to verify engineering feasibility and the core product hypothesis — that a recomputable veto is understandable and usable at the moment of a lease decision. It was not to acquire users at scale. SitePilot shipped to the US App Store on 5 Nov 2026 as v1.0, and there is no real market data yet. That is the expected state of a first experiment, not a failed outcome.</p>
@@ -353,8 +449,11 @@ html { scroll-padding-top: 80px; }
 <h3 data-i18n="p7LearnH">What I learned</h3>
 <p data-i18n="p7l1">For a high-stakes, once-in-a-while B2C decision tool, the most informative behaviour is not activation or session length. It is how people handle missing information, and whether they accept a "no". If users never resolve Unknowns, the diligence UI is too expensive. If a veto is routinely overridden, the rule needs recalibration — not the user.</p>
 <p data-i18n="p7l2">The next stage is to observe whether founders can restate the key assumptions in their own words, name a diligence question they had not considered, and change a real lease decision because of the verdict. I would pre-declare a bar for each of those before calling any number a success, and I would remove the paid AI tier if its fields are ignored rather than market it harder.</p>
+</div>
+<div class="grid-rail">
 <p data-i18n="m8H2" class="takeaway">Published is a delivery fact, not a market conclusion.</p>
 <p data-i18n="p7App" class="sp-note">The raw App Store snapshot — including the 0-download figure and its data-window explanation — is kept in the technical appendix rather than presented as a headline number. It is a coverage fact, not a product result.</p>
+</div>
 </section>
 
 <section class="section container appendix" id="appendix">
