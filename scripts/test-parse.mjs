@@ -8,7 +8,7 @@
 import {
   parseCsv, sumWindow, buildWindow, unitsFromSalesRows, windowEndingAt,
   appKeyFor, uniqueAppKeys, buildDailySeries, seriesFromAnalyticsRows,
-  mergeStoreApps, mergeDailyMaps, conversionFor
+  mergeStoreApps, mergeDailyMaps, conversionFor, resolveAsOf, latestDayInSeries
 } from './update-metrics.mjs';
 
 let failed = 0;
@@ -272,5 +272,31 @@ check('conversion: missing either series returns null',
   conversionFor(null, impByDay, ['d']) === null && conversionFor(dlByDay, null, ['d']) === null);
 check('conversion: dates outside the requested window are ignored',
   conversionFor(new Map([['outside', 50]]), new Map([['outside', 100]]), ['2026-10-30']) === null);
+
+// F36: daily freshness. The window end must follow the NEWEST data source,
+// not the Sales & Trends report alone. A 2026-10-30 -> 2026-11-13 upstream
+// stall used to freeze the whole board for two weeks.
+const TODAY = new Date('2026-11-15T03:00:00Z');
+check('asOf: newest candidate wins',
+  resolveAsOf(['2026-10-30', '2026-11-13'], TODAY) === '2026-11-13');
+check('asOf: a stalled Sales report alone does not invent a newer date',
+  resolveAsOf(['2026-10-30', null], TODAY) === '2026-10-30');
+check('asOf: future-dated rows are ignored',
+  resolveAsOf(['2026-11-20', '2026-11-13'], TODAY) === '2026-11-13');
+check('asOf: today is not a valid end (report does not exist yet)',
+  resolveAsOf(['2026-11-15'], TODAY) === '2026-11-14');
+check('asOf: no data at all falls back to yesterday',
+  resolveAsOf([null, undefined, 'garbage'], TODAY) === '2026-11-14');
+check('asOf: malformed / non-string dates are rejected',
+  resolveAsOf(['2026/11/13', 'x', 20261113], TODAY) === '2026-11-14');
+check('latestDayInSeries: scans downloads AND impressions',
+  latestDayInSeries([
+    { downloads: { byDay: new Map([['2026-10-30', 2]]) }, impressions: null },
+    { downloads: null, impressions: { byDay: new Map([['2026-11-13', 7]]) } }
+  ]) === '2026-11-13');
+check('latestDayInSeries: skips malformed dates',
+  latestDayInSeries([{ impressions: { byDay: new Map([['bad', 1], ['2026-11-01', 3]]) } }]) === '2026-11-01');
+check('latestDayInSeries: empty results return null',
+  latestDayInSeries([]) === null && latestDayInSeries([{}]) === null);
 
 process.exit(failed);

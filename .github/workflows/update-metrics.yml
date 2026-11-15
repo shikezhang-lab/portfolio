@@ -2,7 +2,10 @@ name: Update App Store Connect metrics
 
 on:
   schedule:
-    - cron: "0 2 * * 1" # every Monday 02:00 UTC
+    # Daily, not weekly. Apple publishes Sales & Trends DAILY reports with
+    # a variable lag: a Monday-only run left the site showing 2026-10-30
+    # data while the upstream had already moved on to 2026-11-13.
+    - cron: "0 2 * * *" # every day 02:00 UTC (10:00 Beijing)
   workflow_dispatch:
 
 permissions:

@@ -234,6 +234,13 @@ if (data) {
     data.source === 'sales-and-trends' && data.updatedAt === LATEST,
     'source=' + data.source + ' updatedAt=' + data.updatedAt);
   check('updatedAt is the latest available report date', data.updatedAt === LATEST, data.updatedAt);
+  check('freshness fields are published with the snapshot',
+    data.dataThrough === LATEST && data.downloadsThrough === LATEST &&
+    data.impressionsThrough === LATEST && /^\d{4}-\d{2}-\d{2}$/.test(data.syncedAt || ''),
+    JSON.stringify({ d: data.dataThrough, dl: data.downloadsThrough,
+                     imp: data.impressionsThrough, s: data.syncedAt }));
+  check('window end equals dataThrough',
+    data.daily?.dates?.at(-1) === data.dataThrough, String(data.daily?.dates?.at(-1)));
 }
 
 // ------------------------------------------------- front-end contract
@@ -279,6 +286,14 @@ check('site: no "two apps / both apps" copy is left in the Traction section',
   !site.includes('two live apps') && !site.includes('both apps'));
 check('site: third app has a display name and every series is a solid measured line',
   site.includes("sitepilot: 'SitePilot'") && !site.includes("dash: '2 3'"));
+check('site: workflow runs EVERY day, not Monday-only',
+  (() => { const wf = fs.readFileSync(new URL('../.github/workflows/update-metrics.yml', import.meta.url), 'utf8');
+    return wf.includes('cron: "0 2 * * *"') && !wf.includes('cron: "0 2 * * 1"'); })());
+check('site: freshness line shows both per-source cut-offs and the last run',
+  site.includes('id="traction-freshness"') && site.includes("'freshness'") &&
+  site.includes('downloadsThrough') && site.includes('impressionsThrough') && site.includes('syncedAt'));
+check('site: window end is read from the snapshot, not pinned to a hardcoded date',
+  site.includes('m.dataThrough || m.updatedAt'));
 
 // ------------------------------------- second run: auto-discovery (3 apps)
 // Pure-helper tests cannot catch a stale identifier inside main(), so really
@@ -433,6 +448,49 @@ if (data3) {
   check('full-window impressions: conversion uses both shared days, not just one',
     data3.totals.conversionDays === 2 && data3.totals.conversionPct === 11.56,
     JSON.stringify(data3.totals));
+}
+// ------------------- fourth run: window advances when Sales stalls (F36)
+// Sales & Trends stops at LATEST (12 days old) while Analytics already has a
+// report from 2 days ago. The 90-day window MUST end at the newer date, or the
+// whole board freezes at the stale sales date again.
+const NEWER = (() => { const d = new Date(); d.setUTCDate(d.getUTCDate() - 2); return d.toISOString().slice(0, 10); })();
+process.env.ASC_APP_IDS = DANCELOG;
+globalThis.fetch = async (url, opts) => {
+  const u = String(url);
+  if (u.includes('/instances')) return json({ data: [{ id: 'iNew', attributes: { granularity: 'DAILY' } }] });
+  if (u.includes('/segments')) return json({ data: [{ id: 'segNew', attributes: { url: 'https://s3.test/new.csv.gz' } }] });
+  if (u.startsWith('https://s3.test/')) return raw(gz(impressionsCsvOn(DANCELOG, 'Dance Log', NEWER, [['Impression', 7]])));
+  return baseFetch(url, opts);
+};
+let threw4 = null;
+try { await mod.main(); } catch (err) { threw4 = err; }
+check('daily freshness: main() completes without throwing', threw4 === null, threw4 && threw4.message);
+
+const html4 = fs.readFileSync(indexFile, 'utf8');
+const assign4 = html4.indexOf('const ASC_METRICS = ');
+const obj4 = html4.indexOf('{', assign4);
+let depth4 = 0, end4 = -1;
+for (let i = obj4; i < html4.length; i++) {
+  if (html4[i] === '{') depth4++;
+  else if (html4[i] === '}') { depth4--; if (depth4 === 0) { end4 = i; break; } }
+}
+let data4 = null;
+try { data4 = JSON.parse(html4.slice(obj4, end4 + 1)); }
+catch (err) { console.log('  JSON.parse #4 failed: ' + err.message); }
+check('daily freshness: written block is valid JSON', data4 !== null);
+if (data4) {
+  check('daily freshness: window ends at the newest Analytics day, not the stale sales day',
+    data4.daily?.dates?.at(-1) === NEWER && data4.dataThrough === NEWER,
+    JSON.stringify({ end: data4.daily?.dates?.at(-1), through: data4.dataThrough, expected: NEWER }));
+  check('daily freshness: both per-source cut-offs are published',
+    data4.downloadsThrough === LATEST && data4.impressionsThrough === NEWER,
+    JSON.stringify({ dl: data4.downloadsThrough, imp: data4.impressionsThrough }));
+  check('daily freshness: the newer impression day is counted',
+    data4.totals.impressionsWindow === 7, String(data4.totals.impressionsWindow));
+  check('daily freshness: downloads from the older sales day are still inside the window',
+    data4.totals.downloadsWindow === 23, String(data4.totals.downloadsWindow));
+  check('daily freshness: syncedAt is stamped on every run',
+    /^\d{4}-\d{2}-\d{2}$/.test(data4.syncedAt || ''), String(data4.syncedAt));
 }
 globalThis.fetch = baseFetch;
 

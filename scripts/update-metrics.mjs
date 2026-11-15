@@ -468,6 +468,37 @@ function windowEndingAt(latest) {
 }
 
 /**
+ * Pick the window's last day from the NEWEST real data available, never from
+ * the wall clock and never from one source alone. Sales & Trends can stall for
+ * weeks (the 2026-10-30 -> 2026-11-13 gap) while Analytics keeps publishing;
+ * pinning the window to the sales report froze the WHOLE board, including the
+ * impressions that did arrive. Future-dated rows (clock skew, malformed
+ * reports) are ignored, and nothing may end later than yesterday, because
+ * today's report does not exist yet.
+ */
+function resolveAsOf(candidates, today = new Date()) {
+  const yesterday = dayKey(new Date(Date.UTC(
+    today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - 1)));
+  const valid = (candidates || [])
+    .filter(d => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && d <= yesterday);
+  return valid.length ? valid.sort()[valid.length - 1] : yesterday;
+}
+
+/** Newest date present in any per-day series already fetched for the apps. */
+function latestDayInSeries(results) {
+  let max = null;
+  for (const r of results || []) {
+    for (const src of [r && r.downloads, r && r.impressions]) {
+      if (!src || !src.byDay || typeof src.byDay.keys !== 'function') continue;
+      for (const d of src.byDay.keys()) {
+        if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && (max === null || d > max)) max = d;
+      }
+    }
+  }
+  return max;
+}
+
+/**
  * Sum Units per Apple Identifier from a parsed Sales & Trends TSV.
  * Only app purchases count ("App 销量"): Product Type Identifiers starting
  * with "1" (1T paid / 1F free). Updates (7*) and other line items are
@@ -744,10 +775,8 @@ async function main() {
     console.log('  ASC_VENDOR_NUMBER not set — using Analytics "App Downloads" (does NOT match the ASC backend "App 销量" card).');
   }
 
-  const dates = sales ? sales.dates : buildWindow();
-  // One window only: every published number is a cumulative total over these
-  // dates. No comparison window, hence no percentage that can turn negative.
-  const current = dates;
+  // The window end is computed AFTER the Analytics fetch below: a lagging
+  // Sales & Trends report must not freeze impressions that are already here.
 
   const appResults = [];
   for (const appId of APP_IDS) {
@@ -780,6 +809,15 @@ async function main() {
       console.log('  ERROR: ' + err.message);
     }
   }
+
+  const analyticsLast = latestDayInSeries(appResults);
+  const salesLast = sales ? sales.latest : null;
+  const asOf = resolveAsOf([salesLast, analyticsLast]);
+  const dates = windowEndingAt(asOf);
+  // One window only: every published number is a cumulative total over these
+  // dates. No comparison window, hence no percentage that can turn negative.
+  const current = dates;
+  console.log(`  window ends ${asOf} (sales through ${salesLast || '—'}, analytics through ${analyticsLast || '—'})`);
 
   // Key resolution is collision-checked: a shared key silently drops a chart
   // series and mislabels a raw-table row (see uniqueAppKeys).
@@ -861,7 +899,14 @@ async function main() {
   const metrics = {
     // With Sales & Trends the numbers are only complete up to the latest
     // available daily report — stamp that date so it matches the ASC card.
-    updatedAt: sales ? sales.latest : dayKey(new Date()),
+    // "through" = last day of the 90-day window. Kept separate from the
+    // per-source cut-offs, so a lagging Sales report is VISIBLE instead of
+    // silently freezing every number on the page.
+    updatedAt: asOf,
+    dataThrough: asOf,
+    downloadsThrough: salesLast,
+    impressionsThrough: analyticsLast,
+    syncedAt: dayKey(new Date()),
     source: sales ? 'sales-and-trends' : 'analytics-reports',
     windowDays: WINDOW,
     // "Live apps" is the count of apps ACTUALLY on sale (public App Store
@@ -911,7 +956,7 @@ async function main() {
 export {
   parseCsv, sumWindow, buildWindow, windowEndingAt, unitsFromSalesRows,
   appKeyFor, uniqueAppKeys, buildDailySeries, seriesFromAnalyticsRows,
-  mergeStoreApps, mergeDailyMaps, conversionFor, main
+  mergeStoreApps, mergeDailyMaps, conversionFor, resolveAsOf, latestDayInSeries, main
 };
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   main().catch((err) => { console.error('FATAL: ' + err.message); process.exit(1); });
