@@ -903,6 +903,15 @@
       --dify-chatbot-bubble-button-height: 60px;
     }
     #dify-chatbot-bubble-window {
+      /* embed.min.js 把 iframe 挂到 body 且用 position:absolute，包含块是「文档原点」；
+         页面滚动后窗口会停在页面最上方，与 fixed 的按钮脱节。
+         这里强制视口定位；坐标必须显式写，脚本的 var(--dify-chatbot-bubble-button-*)
+         定义在按钮上，iframe 是 body 子元素、继承不到，会回退成 1rem。 */
+      position: fixed !important;
+      top: auto !important;
+      right: 26px !important;
+      bottom: 96px !important;   /* 按钮 bottom 24 + 按钮高 60 + 12 间隙 */
+      left: auto !important;
       width: 24rem !important;
       height: 40rem !important;
       max-width: calc(100vw - 28px) !important;
@@ -913,6 +922,10 @@
       #dify-chatbot-bubble-button {
         --dify-chatbot-bubble-button-bottom: 14px;
         --dify-chatbot-bubble-button-right: 14px;
+      }
+      #dify-chatbot-bubble-window {
+        right: 14px !important;
+        bottom: 86px !important;  /* 14 + 60 + 12 */
       }
     }
     /* 方案 1+3：放大按钮、呼吸描边、AI 角标、可关闭双语引导卡 */
@@ -4137,12 +4150,13 @@
       applyQaLang(currentLang());
       closeBtn.focus();
     }
-    function closePanel() {
+    function closePanel(restoreFocus) {
       dock.dataset.open = 'false';
       panel.setAttribute('aria-hidden', 'true');
       toggle.setAttribute('aria-expanded', 'false');
       applyQaLang(currentLang());
-      toggle.focus();
+      /* 点击窗口外部收起时不抢焦点，避免打断用户刚点的链接 / 控件。 */
+      if (restoreFocus !== false) toggle.focus();
     }
     toggle.addEventListener('click', function () {
       if (dock.dataset.open === 'true') closePanel(); else openPanel();
@@ -4156,6 +4170,25 @@
     document.querySelectorAll('[data-lang-btn]').forEach(function (b) {
       b.addEventListener('click', function () { applyQaLang(b.dataset.langBtn); });
     });
+
+    /* 点击对话窗口外部收起。
+       官方模式：调 btn.click() 让官方状态机自己切 display / 图标 / ESC 监听，状态不脱节。
+       自绘兜底：走 closePanel(false)，不抢焦点。
+       排除组件自身（dock / 引导卡 / 提示条带 data-qa-root；官方按钮与 iframe 单独排除），
+       避免和它们已有的 click 逻辑打架；iframe 内部点击不冒泡到父页，天然不会误关。 */
+    document.addEventListener('click', function (e) {
+      var node = e.target;
+      if (!node || !node.closest) return;
+      if (node.closest('[data-qa-root]')) return;
+      if (node.closest('#dify-chatbot-bubble-button') || node.closest('#dify-chatbot-bubble-window')) return;
+      var win = document.getElementById('dify-chatbot-bubble-window');
+      if (win && getComputedStyle(win).display !== 'none') {
+        var btn = document.getElementById('dify-chatbot-bubble-button');
+        if (btn) btn.click();
+        return;
+      }
+      if (!dock.hidden && dock.dataset.open === 'true') closePanel(false);
+    }, false);
 
     /* 官方模式：让位给 Dify 气泡，自绘 DOM 隐藏但保持可用，作为加载失败时的兜底。 */
     if (!CONFIG.embedToken) return;
