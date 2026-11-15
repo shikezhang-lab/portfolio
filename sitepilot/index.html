@@ -134,7 +134,13 @@ html { scroll-padding-top: 80px; }
 .decision{padding:30px 0}
 .tradeoff{font-weight:700;color:var(--ink);background:var(--paper-2);border-left:3px solid var(--warning);padding:13px 16px;margin:16px 0 10px;font-size:.95rem;line-height:1.6}
 .decision-meta{font-size:.8rem;color:var(--muted);line-height:1.68;margin:0}
-.story-shot{max-width:300px;margin:36px 0}
+/* Inline screenshots sit beside the reasoning, not below it. */
+.decision-pair{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:44px;align-items:start;margin:6px 0 0}
+.decision-pair .decision-stack{min-width:0}
+.decision-pair .decision{grid-template-columns:60px minmax(0,1fr);gap:20px}
+.decision-pair .decision p{max-width:none}
+.story-shot{max-width:none;margin:0}
+.story-shot figcaption{margin-top:12px}
 .story-shot img{width:100%;height:auto}
 .story-shot figcaption{font-size:.78rem;line-height:1.6;color:var(--muted);margin-top:10px}
 .story-note{max-width:760px;padding:0 0 8px}
@@ -153,6 +159,8 @@ html { scroll-padding-top: 80px; }
 .deep-block>h3{font-size:1.02rem;color:var(--ink);margin-bottom:6px}
 .deep-block .sp-table{margin:16px 0}
 .deep-block .technical-docs{margin-top:14px}
+@media(max-width:1000px){.decision-pair{grid-template-columns:minmax(0,1fr) 240px;gap:28px}}
+@media(max-width:900px){.decision-pair{grid-template-columns:1fr;gap:0}.decision-pair .story-shot{max-width:280px;margin:6px auto 26px;justify-self:center}.decision-pair .decision{grid-template-columns:35px minmax(0,1fr);gap:15px}}
 @media(max-width:900px){.journey{grid-template-columns:1fr}.journey-step{border-right:0;border-bottom:1px solid var(--line)}.journey-step:last-child{border-bottom:0}.journey-step:not(:last-child):after{content:'↓';right:auto;left:50%;top:auto;bottom:-11px;transform:none}}
 @media(max-width:700px){.beat{grid-template-columns:1fr;gap:5px}.story-hook{font-size:.95rem}.deep-inner{padding:4px 14px 20px}.deep-dive>summary{padding:16px 14px}.story-shot{max-width:260px;margin:30px auto}}
 </style></head><body><a class="skip" href="#main"><span data-i18n="t0">Skip to case study</span></a>  <header class="site-header">
@@ -271,7 +279,7 @@ html { scroll-padding-top: 80px; }
 <p class="eyebrow" data-i18n="p4Eyebrow">04 / THE FOUR TRADE-OFFS</p>
 <h2 data-i18n="m4H2">Four decisions, each with a price.</h2>
 <p data-i18n="p4Intro">This is the part of the case I would want an interviewer to interrogate. Each choice names what I refused, what it cost, and how I checked it. None of them is free — a product decision without a price is usually a product decision that has not been made yet.</p>
-<div class="decision"><span class="decision-no">01</span><div>
+<div class="decision-pair"><div class="decision-stack"><div class="decision"><span class="decision-no">01</span><div>
 <h3 data-i18n="m4d1h">Feasibility before persuasion</h3>
 <p data-i18n="p4d1p">The temptation is to help the user win the deal: a polished negotiation script makes the product feel instantly useful. I inverted it. A feasibility gate first computes how much the rent would have to fall for the assumptions to work — under 10% open, 10–25% caution, above 25% blocked. If all three rescue paths fail, the report recommends walking away and withholds the negotiation script entirely.</p>
 <p class="tradeoff" data-i18n="p4d1t">Trade-off → Choosing a hard feasibility gate over a polished negotiation script means the app can talk a paying user out of the deal — and can talk them out of paying at all.</p>
@@ -283,8 +291,8 @@ html { scroll-padding-top: 80px; }
 <p class="tradeoff" data-i18n="p4d2t">Trade-off → Publishing an honest "insufficient" result means some users pay, fill in the form, and get no score at all. That is an incomplete experience I chose deliberately.</p>
 <p class="decision-meta" data-i18n="p4d2m">Rejected: treat missing inputs as zero, or publish one score regardless of gaps · Checked by: unit tests covering the Unknown paths · Price: a harder onboarding conversation, and a report that can feel unhelpful at exactly the moment of highest anxiety.</p>
 </div></div>
-<figure class="story-shot"><a href="assets/diligence.png" target="_blank" rel="noopener" class="shot-link"><img src="assets/diligence.png" width="1242" height="2688" alt="Diligence input · Yes / No / Unknown makes missing information explicit." data-alt-en="Diligence input · Yes / No / Unknown makes missing information explicit." data-alt-zh="尽调输入 · 用“是／否／未知”明确呈现信息缺口。"></a><figcaption data-i18n="t48">Diligence input · Yes / No / Unknown makes missing information explicit.</figcaption></figure>
-<div class="decision"><span class="decision-no">03</span><div>
+</div><figure class="story-shot"><a href="assets/diligence.png" target="_blank" rel="noopener" class="shot-link"><img src="assets/diligence.png" width="1242" height="2688" alt="Diligence input · Yes / No / Unknown makes missing information explicit." data-alt-en="Diligence input · Yes / No / Unknown makes missing information explicit." data-alt-zh="尽调输入 · 用“是／否／未知”明确呈现信息缺口。"></a><figcaption data-i18n="t48">Diligence input · Yes / No / Unknown makes missing information explicit.</figcaption></figure></div>
+<div class="decision-pair"><div class="decision-stack"><div class="decision"><span class="decision-no">03</span><div>
 <h3 data-i18n="m4d3h">Local kernel, minimal AI permission</h3>
 <p data-i18n="p4d3p">Financial results, scoring, gating and scripts are deterministic local code. The model receives only a derived business summary when the user asks, and returns six optional qualitative fields that never enter the base score. It is a deliberately unglamorous amount of AI for a product launched during an AI boom.</p>
 <p class="tradeoff" data-i18n="p4d3t">Trade-off → The product is less "AI-native" to demo, and several hundred lines of guard code exist to protect a feature that is optional.</p>
@@ -296,7 +304,7 @@ html { scroll-padding-top: 80px; }
 <p class="tradeoff" data-i18n="p4d4t">Trade-off → Granting value before the ledger confirms leaves a residual refund-window risk, and signature code that I own forever.</p>
 <p class="decision-meta" data-i18n="p4d4m">Rejected: gate value on a network round-trip, or add RevenueCat · Checked by: 143 Swift tests; a real purchase-to-refund drill is still open · Price: a small exposure I accepted knowingly because the alternative broke the offline promise at the worst possible moment.</p>
 </div></div>
-<figure class="story-shot"><a href="assets/verdict.png" target="_blank" rel="noopener" class="shot-link"><img src="assets/verdict.png" width="1242" height="2688" alt="Export summary · a visible Kill Switch verdict, tied to the modeled scenario." data-alt-en="Export summary · a visible Kill Switch verdict, tied to the modeled scenario." data-alt-zh="导出摘要 · 明确显示与当前测算情景绑定的 Kill Switch 结论。"></a><figcaption data-i18n="t49">Export summary · a visible Kill Switch verdict, tied to the modeled scenario.</figcaption></figure>
+</div><figure class="story-shot"><a href="assets/verdict.png" target="_blank" rel="noopener" class="shot-link"><img src="assets/verdict.png" width="1242" height="2688" alt="Export summary · a visible Kill Switch verdict, tied to the modeled scenario." data-alt-en="Export summary · a visible Kill Switch verdict, tied to the modeled scenario." data-alt-zh="导出摘要 · 明确显示与当前测算情景绑定的 Kill Switch 结论。"></a><figcaption data-i18n="t49">Export summary · a visible Kill Switch verdict, tied to the modeled scenario.</figcaption></figure></div>
 <div class="screen-note story-note"><h3 data-i18n="t50">A decision users can inspect</h3><p data-i18n="t51">In this development example, the base scenario shows a monthly loss of $2,762 and rent-to-sales of 20.5% at $42,432 revenue. Pairing the ratio with its revenue assumption makes the result interpretable. It is a worked example, not a forecast for a real restaurant.</p><p data-i18n="t52" class="small">Unedited simulator captures · 13 Sep 2026. They illustrate the workflow, not the latest review build. Open either image for full detail.</p></div>
 </section>
 
