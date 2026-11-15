@@ -1014,13 +1014,14 @@
         <div class="nav-dropdown-menu" role="menu">
           <div class="dropdown-group">
             <p class="dropdown-group-label">Demo</p>
-            <button class="dropdown-item featured" type="button" data-go="sandbox" role="menuitem">Safety Sandbox ★</button>
+            <button class="dropdown-item" type="button" data-go="sandbox" role="menuitem">Safety Sandbox</button>
           </div>
           <div class="dropdown-group">
             <p class="dropdown-group-label">Published</p>
+            <a class="dropdown-item" href="qa-case/" role="menuitem" style="text-decoration:none">Portfolio QA Assistant</a>
             <button class="dropdown-item" type="button" data-go="freestyle" role="menuitem">Freestyle Challenge</button>
             <button class="dropdown-item" type="button" data-go="dancelog" role="menuitem">DanceLog</button>
-            <button class="dropdown-item featured" type="button" data-go="sitepilot" role="menuitem">SitePilot ★</button>
+            <button class="dropdown-item" type="button" data-go="sitepilot" role="menuitem">SitePilot</button>
           </div>
           <div class="dropdown-group">
             <p class="dropdown-group-label">In development</p>
@@ -1086,13 +1087,13 @@
               <tbody>
                 <tr class="group" id="demo"><td colspan="5">Demo</td></tr>
                 <tr>
-                  <td><strong>Safety Sandbox ★</strong></td>
+                  <td><strong>Safety Sandbox</strong></td>
                   <td><span class="tag">Web</span></td>
                   <td><span class="status-badge demo">Demo</span></td>
                   <td class="summary">A three-paradigm LLM content-safety evaluation workbench.</td>
                   <td class="row-actions"><a class="button small" href="https://safetysandbox.coze.site" target="_blank" rel="noopener noreferrer">Try demo</a><button class="button small" type="button" data-go="sandbox">View case</button></td>
                 </tr>
-                <tr>
+                <tr hidden>
                   <td><strong>RedNote Reflective Generation Agent</strong></td>
                   <td><span class="tag">Agent</span></td>
                   <td><span class="status-badge demo">Demo</span></td>
@@ -1100,6 +1101,13 @@
                   <td class="row-actions"><button class="button small" type="button" data-go="rednote-agent">View case</button></td>
                 </tr>
                 <tr class="group" id="published"><td colspan="5">Published</td></tr>
+                <tr>
+                  <td><strong>Portfolio QA Assistant</strong></td>
+                  <td><span class="tag">Web</span></td>
+                  <td><span class="status-badge published">Live</span></td>
+                  <td class="summary">A document-grounded question-answering assistant embedded in a static portfolio, with explicit evidence boundaries.</td>
+                  <td class="row-actions"><a class="button small" href="https://udify.app/chat/fa2EsAUfkCbMVgJ5" target="_blank" rel="noopener noreferrer">Try demo</a><a class="button small" href="qa-case/">View case</a></td>
+                </tr>
                 <tr>
                   <td><strong>Freestyle Challenge</strong></td>
                   <td><span class="tag">iOS</span></td>
@@ -1115,18 +1123,11 @@
                   <td class="row-actions"><a class="button small" href="https://apps.apple.com/us/app/dance-log/id6795164130" target="_blank" rel="noopener noreferrer">App Store</a><button class="button small" type="button" data-go="dancelog">View case</button></td>
                 </tr>
                 <tr>
-                  <td><strong>SitePilot ★</strong></td>
+                  <td><strong>SitePilot</strong></td>
                   <td><span class="tag">iOS</span></td>
-                  <td><span class="status-badge published">Published</span></td>
+                  <td><span class="status-badge published">Live</span></td>
                   <td class="summary">An iOS restaurant site-evaluation tool that turns costs and operating assumptions into explainable decisions.</td>
                   <td class="row-actions"><a class="button small" href="https://apps.apple.com/us/app/sitepilot-restaurant-lease/id6811473992" target="_blank" rel="noopener noreferrer">App Store</a><button class="button small" type="button" data-go="sitepilot">View case</button></td>
-                </tr>
-                <tr>
-                  <td><strong>Portfolio QA Assistant</strong></td>
-                  <td><span class="tag">Web</span></td>
-                  <td><span class="status-badge published">Live</span></td>
-                  <td class="summary">A document-grounded question-answering assistant embedded in a static portfolio, with explicit evidence boundaries.</td>
-                  <td class="row-actions"><a class="button small" href="https://udify.app/chat/fa2EsAUfkCbMVgJ5" target="_blank" rel="noopener noreferrer">Try demo</a><a class="button small" href="qa-case/">View case</a></td>
                 </tr>
                 <tr class="group" id="in-dev"><td colspan="5">In development</td></tr>
                 <tr>
@@ -2457,7 +2458,6 @@
         "Case · Published · iOS": "案例 · 已上架 · iOS",
         "Case · In development · Web": "案例 · 开发中 · Web",
         "Product": "作品",
-        "Safety Sandbox ★": "安全沙盒 ★",
         "Traction": "增长数据",
         "Early traction across the live app lineup.": "已上架应用的早期数据。",
         "Cumulative downloads · all apps": "全部应用累计下载量",
