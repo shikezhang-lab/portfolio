@@ -141,6 +141,17 @@ html { scroll-padding-top: 80px; }
 .decision-pair .decision p{max-width:none}
 .story-shot{max-width:none;margin:0}
 .story-shot figcaption{margin-top:12px}
+
+/* --- One reading column for text-only sections (2026-11-15) ---------------
+   Prose blocks used to end at 900 / 940 / 1020 / 1300px inside the same
+   section. Unify all narrative blocks to 880px; journey / system-flow /
+   ai-branch / decision-pair / deep-dive stay full width on purpose. */
+.section>h2,.section>h3,.section>.eyebrow,
+.section>p:not(.eyebrow),
+.section>.research-note,.section>.boundary-line,.section>.story-beats,
+.section>.story-note,.section>.sp-box,.section>.sp-two,
+.section>.card,.section>.takeaway,.section>.sp-note,
+.section>.story-hook{max-width:880px}
 .story-shot img{width:100%;height:auto}
 .story-shot figcaption{font-size:.78rem;line-height:1.6;color:var(--muted);margin-top:10px}
 .story-note{max-width:760px;padding:0 0 8px}
